@@ -1,0 +1,288 @@
+---
+title: "Constructing Low-Noise SS3 Datasets for Model Validation"
+subtitle: "Expected Data, Low White Noise, and Controlled Misspecification Tests"
+author:
+  - "L.T. Kell"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+  word_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    reference_docx: reference.docx
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+This document provides a reproducible workflow for constructing low-noise SS3 datasets for model validation. The objective is not to create a zero-error dataset, but to create datasets in which observation error is reduced and apparent process-error autocorrelation is minimised, so that deliberately introduced misspecification can be detected more clearly in subsequent analyses. 
+
+The workflow uses the original SS3 fit as the starting point, then creates two derived datasets: a reduced-measurement-error dataset (`meDir`) based on model expected values, and a reduced-measurement plus reduced-process-error dataset (`peDir`) based on catch regularisation. SS3 can output a file of expected observations (`data_expval.ss`) when the starter file requests two data files, and this is the cleanest basis for constructing the low-noise dataset. [web:182]
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  cache      = TRUE,
+  cache.path = file.path("cache", paste0(tools::file_path_sans_ext(basename(knitr::current_input())), "/")),
+  dev        = "png",
+  dpi        = 300,
+  fig.width  = 10,
+  fig.height = 7
+)
+```
+
+```{r libs}
+library(r4ss)
+library(dplyr)
+library(ggplot2)
+library(plyr)
+library(diags)
+
+set.seed(123)
+
+iFig=0
+iTab=0
+
+source("C:/active/flr/diags/R/diags-SS.R")
+source("C:/active/flr/diags/R/diags-funcs.R")
+```
+
+```{r paths}
+baseDir="C:/active/flr/sstruth"
+
+ssDir=file.path(baseDir, "data/ss3/herring")
+meDir=file.path(baseDir, "data/cond/herring/me")
+peDir=file.path(baseDir, "data/cond/herring/pe")
+
+omDir=ssDir
+```
+
+## Aim
+
+The purpose is to construct three related model states:
+
+- `ssDir`: the original assessment fit.
+- `meDir`: a reduced-measurement-error dataset based on expected values, with optional low white noise added back to observations.
+- `peDir`: a reduced-measurement-error dataset with additional catch regularisation intended to reduce apparent autocorrelation in estimated recruitment deviations.
+
+These are synthetic datasets for validation and method comparison, not reconstructions of the true historical system. 
+
+## Workflow
+
+The workflow has five steps:
+
+1. Run the original assessment and request `data_expval.ss` from SS3.
+2. Build the reduced-measurement-error dataset in `meDir` from expected values.
+3. Fit the reduced-measurement-error model and examine residuals and rec-dev ACF.
+4. Build a reduced-process-error dataset in `peDir` by regularising catch.
+5. Fit the regularised dataset and compare diagnostics across `ssDir`, `meDir`, and `peDir`. 
+
+## Step 1: Configure SS3 to write expected values
+
+SS3 writes `data_expval.ss` when the starter file requests at least two data files. This file contains expected data values from the fitted model and is the recommended starting point for low-noise synthetic datasets. [web:182]
+
+```{r starter-edit}
+starterFile=file.path(omDir, "starter.ss")
+strt=readLines(starterFile)
+strt=gsub(
+  pattern     = "^[[:space:]]*[0-9]+[[:space:]]*# Number of datafiles to produce",
+  replacement = " 2 # Number of datafiles to produce",
+  x           = strt
+)
+writeLines(strt, starterFile)
+
+oldwd=getwd()
+setwd(omDir)
+system("ss3 -nohess", ignore.stdout = TRUE, ignore.stderr = TRUE)
+setwd(oldwd)
+```
+
+```{r read-expected}
+omObs=SS_readdat(file.path(omDir, "data.ss"),        section = 1)
+omHat=SS_readdat(file.path(omDir, "data_expval.ss"), section = 1)
+```
+
+## Step 2: Build reduced-measurement-error dataset
+
+The `meDir` dataset starts from `data_expval.ss`, because it preserves internal consistency among catch, indices, and composition data while removing the original observational residuals. 
+
+```{r copy-me-files, eval=FALSE}
+copy_SS_inputs(
+  dir.old    = omDir,
+  dir.new    = meDir,
+  create.dir = TRUE,
+  overwrite  = TRUE,
+  use_ss_new = FALSE,
+  copy_exe   = TRUE)
+
+meDat=omHat
+```
+
+### Optional low white noise
+
+Very small independent noise can be added back to avoid pathological zero-residual behaviour while keeping observation error low and approximately white. This matches the general expected-data plus observation-error construction used in simulation workflows. 
+
+```{r noise-functions}
+addLognormalNoise<-function(x, sdlog = 0.02) {
+  x * exp(rnorm(length(x), mean = -0.5 * sdlog^2, sd = sdlog))}
+
+rescaleComp<-function(x) {
+  s=sum(x, na.rm = TRUE)
+  if (is.na(s) || s <= 0) return(x)
+  x / s}
+```
+
+```{r add-noise}
+add_noise  =TRUE
+catch_sdlog=0.02
+index_sdlog=0.03
+
+if (add_noise && !is.null(meDat$catch)) {
+  valid=is.finite(meDat$catch$catch) & meDat$catch$catch > 0
+  meDat$catch$catch[valid]=addLognormalNoise(
+    meDat$catch$catch[valid],
+    sdlog = catch_sdlog
+  )
+}
+
+if (add_noise && !is.null(meDat$CPUE)) {
+  valid=is.finite(meDat$CPUE$obs) & meDat$CPUE$obs > 0
+  meDat$CPUE$obs[valid]=addLognormalNoise(
+    meDat$CPUE$obs[valid],
+    sdlog = index_sdlog
+  )
+}
+
+# Optional: leave compositions at expected values or add small perturbations here.
+```
+
+```{r write-me-dat}
+SS_writedat(
+  datlist   = meDat,
+  outfile   = file.path(meDir, "data.ss"),
+  overwrite = TRUE)
+```
+
+## Step 3: Fit reduced-measurement-error dataset
+
+```{r run-me, eval=FALSE}
+oldwd=getwd()
+setwd(meDir)
+system("ss3 -nohess", ignore.stdout = TRUE, ignore.stderr = TRUE)
+setwd(oldwd)
+
+meFit=SS_output(meDir, covar = TRUE, verbose=FALSE,printstats=FALSE,hidewarn=TRUE)
+```
+
+## Step 4: Build reduced-process-error dataset via catch regularisation
+
+The `peDir` dataset starts from `meDir` and applies a catch regularisation step. Here, catch regularisation means smoothing catch in log-space and shrinking the series toward that smooth trend so that apparent autocorrelation in estimated rec devs is reduced. This is a design step for constructing a fit-for-purpose operating-model dataset, not a claim that the resulting catch series is historically correct. 
+
+```{r copy-pe-files, eval=FALSE}
+copy_SS_inputs(
+  dir.old    = meDir,
+  dir.new    = peDir,
+  create.dir = TRUE,
+  overwrite  = TRUE,
+  use_ss_new = FALSE,
+  copy_exe   = TRUE)
+
+peDat=SS_readdat(file.path(meDir, "data.ss"), section = 1)
+```
+
+```{r catch-regularisation}
+if (!is.null(peDat$catch)) {
+  x =peDat$catch$catch
+  ok=is.finite(x) & x > 0
+
+  lx=log(x[ok])
+
+  k =3L
+  w =rep(1 / k, k)
+  lx_sm=as.numeric(stats::filter(lx, filter = w, sides = 2))
+
+  na_idx=is.na(lx_sm)
+  lx_sm[na_idx]=lx[na_idx]
+
+  alpha =0.5
+  lx_adj=(1 - alpha) * lx + alpha * lx_sm
+
+  peDat$catch$catch[ok]=exp(lx_adj)
+}
+
+SS_writedat(
+  datlist   = peDat,
+  outfile   = file.path(peDir, "data.ss"),
+  overwrite = TRUE
+)
+```
+
+```{r run-pe, eval=FALSE}
+oldwd=getwd()
+setwd(peDir)
+system("ss3 -nohess", ignore.stdout = TRUE, ignore.stderr = TRUE)
+setwd(oldwd)
+
+peFit=SS_output(peDir, covar = TRUE, verbose=FALSE,printstats=TRUE,hidewarn=TRUE)
+```
+
+## Step 5: Diagnostics
+
+Comparing rec-dev ACF across the original fit, reduced-measurement dataset, and reduced-process dataset provides a direct way to assess whether the intended regularisation is actually reducing serial structure in the estimated recruitment deviations. 
+
+```{r diagnostics, eval=FALSE}
+ssFit=SS_output(ssDir, covar = TRUE)
+meFit=SS_output(meDir, covar = TRUE)
+peFit=SS_output(peDir, covar = TRUE)
+
+rec_ss=ssFit$recruit$dev
+rec_me=meFit$recruit$dev
+rec_pe=peFit$recruit$dev
+
+par(mfrow = c(1, 3))
+acf(rec_ss[!is.na(rec_ss)], main = "Original fit")
+acf(rec_me[!is.na(rec_me)], main = "Reduced ME")
+acf(rec_pe[!is.na(rec_pe)], main = "Reduced ME + PE")
+par(mfrow = c(1, 1))
+```
+
+## Optional fitted-catch route
+
+If catch is first estimated under an SS3 configuration that treats catch with an error model, the expected catch from `SS_output()$catch$exp` can be written back into the data file before the `meDir` or `peDir` steps. This is an optional alternative route if you want fitted catch rather than `data_expval.ss` catch as the starting series. 
+
+```{r fitted-catch-route, eval=FALSE}
+fit=SS_output(ssDir, covar = FALSE)
+catch_exp=fit$catch[, c("Yr", "Fleet", "exp")]
+names(catch_exp)[names(catch_exp) == "exp"]="exp_catch"
+
+dat=SS_readdat(file.path(ssDir, "data.ss"), section = 1)
+
+for (i in seq_len(nrow(dat$catch))) {
+  y =dat$catch$year[i]
+  fl=dat$catch$fleet[i]
+
+  idx=which(catch_exp$Yr == y & catch_exp$Fleet == fl)
+  if (length(idx) == 1L && is.finite(catch_exp$exp_catch[idx])) {
+    dat$catch$catch[i]=catch_exp$exp_catch[idx]
+  }
+}
+
+SS_writedat(
+  datlist   = dat,
+  outfile   = file.path(ssDir, "data_catchExp.ss"),
+  overwrite = TRUE)
+```
+
+## Notes
+
+This workflow is intended to construct an operating-model dataset that is “perfect” for the specific validation task, rather than necessarily “correct” in a historical sense. If rec-dev autocorrelation remains after the `meDir` step, that indicates the remaining structure is not simply observational noise and motivates the additional regularisation step used to construct `peDir`. 

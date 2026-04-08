@@ -1,0 +1,33 @@
+Package: sstruth
+Type: Package
+Title: sstruth
+Version: 0.0.0.9000
+Authors@R: 
+    c(person(given = "Your",
+             family = "Name",
+             role = c("aut", "cre"),
+             email = "you@example.com"))
+Description: Tools and helpers for SS3-related workflows and analysis.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    R (>= 4.0.0)
+Imports:
+    diags,
+    FCore,
+    FLBRP,
+    FLRebuild,
+    FLasher,
+    future,
+    future.apply,
+    plyr,
+    r4ss,
+    ss3om,
+    stats
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

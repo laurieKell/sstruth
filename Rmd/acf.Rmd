@@ -1,0 +1,64 @@
+---
+title: "SS3 Recruitment ACF/CCF Diagnostics"
+subtitle: "Autocorrelation and Cross-Correlation Checks"
+author:
+  - "L.T. Kell"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+  word_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    reference_docx: reference.docx
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  cache      = TRUE,
+  cache.path = file.path("cache", paste0(tools::file_path_sans_ext(basename(knitr::current_input())), "/")),
+  dev        = "png",
+  dpi        = 300,
+  fig.width  = 10,
+  fig.height = 7)
+```
+
+```{r libs}
+library(FLRebuild)
+library(r4ss)
+library(tidyverse)
+```
+
+```{r run-acf}
+ssDir="C:/active/flr/sstruth/data/ss3"
+dirs=list.dirs(ssDir, full.names=TRUE, recursive=TRUE)
+dirs=dirs[file.exists(file.path(dirs, "Report.sso"))]
+
+acfs=mlply(dirs, function(x) {
+  t0=SS_output(x)
+  acf(t0$recruit$dev[!is.na(t0$recruit$dev)])
+})
+```
+
+```{r run-ccf}
+pe=curveSS(dirs)
+ts=pe$tseries[!duplicated(pe$tseries[, 1:2]), ]
+ts=ts[!is.na(ts$recDevs) & !is.na(ts$pe), ]
+
+par(mfrow=c(4, 5), mar=c(0, 0, 0, 0))
+d_ply(ts, .(id), with, tryIt(ccf(recDevs, pe)))
+```
+

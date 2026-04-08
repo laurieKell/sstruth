@@ -1,0 +1,101 @@
+---
+title: "SS Production Error Diagnostics"
+subtitle: "PT vs SS Production-Function Comparison"
+author:
+  - "L.T. Kell"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+  word_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    reference_docx: reference.docx
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  cache      = TRUE,
+  cache.path = file.path("cache", paste0(tools::file_path_sans_ext(basename(knitr::current_input())), "/")),
+  dev        = "png",
+  dpi        = 300,
+  fig.width  = 10,
+  fig.height = 7)
+```
+
+## Overview
+
+This workflow compares surplus-production and process-error behavior between:
+
+- SS-derived production-function signals, and
+- Pella-Tomlinson fits in biomass and SSB space.
+
+The package now provides generic interfaces:
+
+- `ssPe(x, ...)` for full outputs and plots
+- `ssPeDiagnose(x, ...)` for diagnostics only
+
+Where `x` can be:
+
+- an SS3 model directory (`character`), or
+- a list with `tseries` and `curve`.
+
+```{r libs}
+library(sstruth)
+library(r4ss)
+```
+
+## Run from an SS3 directory
+
+```{r run-from-dir, eval=FALSE}
+ssDir="C:/active/flr/sstruth/data/ss3/herring"
+
+res=ssPe(
+  x = ssDir,
+  shapePt = 0.2,
+  bmsySsb = NULL,
+  makePlots = TRUE
+)
+
+res$pars
+res$diagnostics
+```
+
+## Diagnostics-only run
+
+```{r diagnostics-only, eval=FALSE}
+diag=ssPeDiagnose(
+  x = "C:/active/flr/sstruth/data/ss3/herring",
+  shapePt = 0.2
+)
+
+diag
+```
+
+## Run from prebuilt objects
+
+```{r run-from-list, eval=FALSE}
+cs=curveSS("C:/active/flr/sstruth/data/ss3/herring")
+
+res2=ssPe(
+  x = list(tseries = cs$tseries, curve = cs$curve),
+  shapePt = 0.2,
+  makePlots = FALSE
+)
+
+res2$diagnostics
+```
+

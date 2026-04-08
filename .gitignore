@@ -1,0 +1,10 @@
+# Ignore cache directories anywhere in the repo
+**/cache/
+**/backUp/
+*.html
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.DS_Store
+

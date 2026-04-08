@@ -1,0 +1,744 @@
+---
+title: "Constructing Low-Noise SS3 Datasets for Model Validation"
+subtitle: "Expected Data, Low White Noise, and Controlled Misspecification Tests"
+author:
+  - "L.T. Kell"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float: true
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+  word_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    reference_docx: reference.docx
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  cache      = TRUE,
+  cache.path = file.path("cache", paste0(tools::file_path_sans_ext(basename(knitr::current_input())), "/")),
+  dev        = "png",
+  dpi        = 300,
+  fig.width  = 10,
+  fig.height = 7)
+```
+
+
+# Packages
+
+```{r libs}
+library(r4ss)
+library(dplyr)
+library(ggplot2)
+library(plyr)
+library(diags)
+
+library(future.apply)
+
+set.seed(123)
+
+iFig=0
+iTab=0
+
+source("C:/active/flr/diags/R/diags-SS.R")
+source("C:/active/flr/diags/R/diags-funcs.R")
+```
+
+
+```{r}
+ssDir="C:/active/flr/sstruth/data/ss3/herring"
+```
+
+# Helpers
+
+```{r helpers}
+source("C:/active/flr/sstruth/R/helper.R")
+```
+
+# Overview
+
+## Single-file workflow
+
+This R Markdown document is designed to be self-contained: it includes the helper functions, preflight checks, scenario-folder builder, single-model pseudo-data pipeline, and batch campaign runner in one file so you can keep the whole workflow portable and renderable from a single source .
+
+
+This document consolidates the full workflow in one place: a preflight checker, a single-model pseudo-data generator, an audit-enabled run wrapper, and a parallel batch driver with preflight gating. The design uses `r4ss` readers and writers for SS3 inputs and outputs, while the batch layer uses `future.apply` for parallel execution with reproducible random-number generation when `future.seed = TRUE` .
+
+The intended workflow is: inspect the base assessment structure, identify potential adjustments before pseudo-data generation, generate expected-value data from SS3, replace observations with fitted values plus small white noise, optionally smooth catch, rerun, and then scale this across stocks and scenarios in parallel [web:2][code_file:69].
+
+# Preflight routines
+
+```{r preflight-functions}
+mdlStrct<-function(ssDir, version = "3.30", verbose = TRUE) {
+  ssDir=normalizePath(ssDir, winslash = "/", mustWork = TRUE)
+  starter_file=file.path(ssDir, "starter.ss")
+  forecast_file=file.path(ssDir, "forecast.ss")
+  if (!file.exists(starter_file)) stop("starter.ss not found")
+  if (!file.exists(forecast_file)) stop("forecast.ss not found")
+
+  st=r4ss::SS_readstarter(starter_file, verbose = FALSE)
+  datfile=file.path(ssDir, st$datfile %||% "data.ss")
+  ctlfile=file.path(ssDir, st$ctlfile %||% "control.ss")
+  if (!file.exists(datfile)) stop("Data file not found: ", datfile)
+  if (!file.exists(ctlfile)) stop("Control file not found: ", ctlfile)
+
+  dat=r4ss::SS_readdat(datfile, version = version, verbose = FALSE)
+  ctl=r4ss::SS_readctl(file = ctlfile, datlist = dat, verbose = FALSE)
+
+  cpue=dat$CPUE
+  catch=dat$catch
+  lencomp=dat$lencomp
+  agecomp=dat$agecomp
+
+  cpueFleetCol=resolveCol(cpue, c("fleet", "fltsvy"))
+  catchFleetCol=resolveCol(catch, c("fleet", "fltsvy", "season", "seas"))
+  lenFleetCol=resolveCol(lencomp, c("fleet", "fltsvy"))
+  ageFleetCol=resolveCol(agecomp, c("fleet", "fltsvy"))
+
+  cpue_seCol=resolveCol(cpue, c("se_log", "se", "stderr", "sd"))
+  cpue_obsCol=resolveCol(cpue, c("obs", "index", "cpue"))
+  catchCol=resolveCol(catch, c("catch", "catch_season", "totcatch"))
+  catch_yearCol=resolveCol(catch, c("year", "yr"))
+  len_nsampCol=resolveCol(lencomp, c("Nsamp", "nsamp"))
+  age_nsampCol=resolveCol(agecomp, c("Nsamp", "nsamp"))
+
+  info=list(
+    ssDir = ssDir,
+    starter_datfile = basename(datfile),
+    starter_ctlfile = basename(ctlfile),
+    bootstrap_option = st$N_bootstraps %||% NA,
+    nfleets = dat$Nfleets %||% NA,
+    nseas = dat$nseas %||% NA,
+    nareas = dat$N_areas %||% NA,
+    ncpue = safeNrow(cpue),
+    ncatch = safeNrow(catch),
+    nlencomp = safeNrow(lencomp),
+    nagecomp = safeNrow(agecomp),
+    fleets_cpue = if (!is.na(cpueFleetCol)) paste(sort(unique(cpue[[cpueFleetCol]])), collapse = ",") else NA,
+    fleets_catch = if (!is.na(catchFleetCol)) paste(sort(unique(catch[[catchFleetCol]])), collapse = ",") else NA,
+    fleets_lencomp = if (!is.na(lenFleetCol)) paste(sort(unique(lencomp[[lenFleetCol]])), collapse = ",") else NA,
+    fleets_agecomp = if (!is.na(ageFleetCol)) paste(sort(unique(agecomp[[ageFleetCol]])), collapse = ",") else NA,
+    SR_function = ctl$SR_function %||% NA,
+    recruitment_autocorr_parameter_present = if (!is.null(ctl$SR_parms)) any(grepl("autocorr", rownames(ctl$SR_parms), ignore.case = TRUE)) else NA,
+    stringsAsFactors = FALSE
+  )
+
+  adjustments=character()
+  flags=character()
+
+  if (is.na(info$bootstrap_option) || info$bootstrap_option != 2) {
+    adjustments=c(adjustments, "Set starter option N_bootstraps = 2 when generating expected-value data for the pseudo-data workflow.")
+  }
+  if (safeNrow(cpue) == 0) flags=c(flags, "No CPUE block detected.")
+  if (safeNrow(cpue) > 0 && is.na(cpue_obsCol)) flags=c(flags, "Could not identify CPUE observation column in dat$CPUE.")
+  if (safeNrow(cpue) > 0 && is.na(cpue_seCol)) adjustments=c(adjustments, "Check CPUE SE column names in the r4ss object before automated low-error replacement.")
+  if (safeNrow(lencomp) > 0 && !is.na(len_nsampCol) && mean(lencomp[[len_nsampCol]], na.rm = TRUE) < 100) adjustments=c(adjustments, "Mean lencomp Nsamp is low; consider larger effective sample sizes for low-error pseudo-data.")
+  if (safeNrow(agecomp) > 0 && !is.na(age_nsampCol) && mean(agecomp[[age_nsampCol]], na.rm = TRUE) < 100) adjustments=c(adjustments, "Mean agecomp Nsamp is low; consider larger effective sample sizes for low-error pseudo-data.")
+  if (safeNrow(catch) > 0 && (is.na(catchCol) || is.na(catch_yearCol))) adjustments=c(adjustments, "Inspect dat$catch column names before automated catch smoothing.")
+  if (!is.null(ctl$SR_parms) && any(grepl("autocorr", rownames(ctl$SR_parms), ignore.case = TRUE))) adjustments=c(adjustments, "A recruitment autocorrelation parameter appears present; confirm whether you want it estimated for low-autocorrelation pseudo-data.")
+  if (!is.null(ctl$timevary_parm_info) && nrow(ctl$timevary_parm_info) > 0) adjustments=c(adjustments, "Time-varying parameters detected; pseudo-data based on fitted values may inherit those patterns.")
+  if (file.exists(file.path(ssDir, "wtatage.ss"))) adjustments=c(adjustments, "Empirical weight-at-age file detected; make sure scenario folders include all auxiliary files.")
+
+  if (length(flags)==0) flags=""
+
+  out_summary=data.frame(item = names(info), value = unlist(info), stringsAsFactors = FALSE)
+  out_notes=rbind.fill(
+    data.frame(type = "flag", message = unique(flags), stringsAsFactors = FALSE),
+    data.frame(type = "adjustment", message = unique(adjustments), stringsAsFactors = FALSE)
+  )
+  out_notes=out_notes[nzchar(out_notes$message), , drop = FALSE]
+  if (nrow(out_notes) == 0) out_notes=data.frame(type = "note", message = "No obvious structural issues detected by preflight.", stringsAsFactors = FALSE)
+  list(summary = out_summary, notes = out_notes)
+}
+
+smryOutputs<-function(ssDir, verbose = TRUE) {
+  ssDir=normalizePath(ssDir, winslash = "/", mustWork = TRUE)
+  repfile=file.path(ssDir, "Report.sso")
+  warnfile=file.path(ssDir, "warning.sso")
+  run_summary=data.frame(item = character(), value = character(), stringsAsFactors = FALSE)
+  notes=data.frame(type = character(), message = character(), stringsAsFactors = FALSE)
+  if (file.exists(repfile)) {
+    rep=try(r4ss::SS_output(dir = ssDir, covar = FALSE, forecast = FALSE, warn = TRUE, verbose = FALSE, printstats = FALSE), silent = TRUE)
+    if (!inherits(rep, "try-error")) {
+      run_summary=rbind.fill(
+        run_summary,
+        data.frame(item = "report_exists", value = TRUE),
+        data.frame(item = "npars_est", value = rep$npars %||% NA),
+        data.frame(item = "max_grad", value = rep$maximum_gradient %||% NA),
+        data.frame(item = "N_warn", value = rep$N_warn %||% NA)
+      )
+      mg=suppressWarnings(as.numeric(rep$maximum_gradient %||% NA))
+      if (is.finite(mg) && mg > 0.001) notes=rbind.fill(notes, data.frame(type = "adjustment", message = paste0("Maximum gradient is ", signif(mg, 3), "; consider resolving convergence before generating pseudo-data.")))
+      nw=suppressWarnings(as.numeric(rep$N_warn %||% NA))
+      if (is.finite(nw) && nw > 0) notes=rbind.fill(notes, data.frame(type = "flag", message = paste0("warning.sso reports ", nw, " warnings; inspect these before batch running.")))
+    } else {
+      notes=rbind.fill(notes, data.frame(type = "flag", message = "Report.sso exists but r4ss::SS_output could not parse it."))
+    }
+  } else {
+    notes=rbind.fill(notes, data.frame(type = "note", message = "No existing Report.sso found; only input structure was summarised."))
+  }
+  wtxt=readWarns(warnfile)
+  if (length(wtxt) > 0) notes=rbind.fill(notes, data.frame(type = "warning_excerpt", message = head(wtxt, 10), stringsAsFactors = FALSE))
+  list(run_summary = run_summary, run_notes = notes)
+}
+
+preReport<-function(ssDir, version = "3.30", output_dir = file.path(ssDir, "audit"), prefix = "preflight", verbose = TRUE) {
+  ssDir=normalizePath(ssDir, winslash = "/", mustWork = TRUE)
+  
+  print(1)
+  
+  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+  inp=mdlStrct(ssDir = ssDir, version = version, verbose = verbose)
+  print(2)
+  
+  out=smryOutputs(ssDir = ssDir, verbose = verbose)
+  print(3)
+  
+  utils::write.csv(inp$summary, file.path(output_dir, paste0(prefix, "_input_summary.csv")), row.names = FALSE)
+  utils::write.csv(inp$notes, file.path(output_dir, paste0(prefix, "_input_notes.csv")), row.names = FALSE)
+  if (nrow(out$run_summary) > 0) utils::write.csv(out$run_summary, file.path(output_dir, paste0(prefix, "_run_summary.csv")), row.names = FALSE)
+  if (nrow(out$run_notes) > 0) utils::write.csv(out$run_notes, file.path(output_dir, paste0(prefix, "_run_notes.csv")), row.names = FALSE)
+  invisible(list(ssDir = ssDir, output_dir = output_dir, input_summary = inp$summary, input_notes = inp$notes, run_summary = out$run_summary, run_notes = out$run_notes))
+}
+```
+
+# Pseudo-data pipeline
+
+```{r pipeline-functions}
+modIndx<-function(dat, index_cv = 0.05, fleets_keep_exact = NULL, fleets_drop = NULL, verbose = TRUE) {
+  audit=list(summary = data.frame(), before = NULL, after = NULL)
+  if (is.null(dat$CPUE) || !is.data.frame(dat$CPUE) || nrow(dat$CPUE) == 0) return(list(dat = dat, audit = audit))
+  df=dat$CPUE; before=df
+  fleetCol=resolveCol(df, c("fleet", "fltsvy"))
+  obsCol=resolveCol(df, c("obs", "index", "cpue"))
+  seCol=resolveCol(df, c("se_log", "se", "stderr", "sd"))
+  if (is.na(obsCol)) return(list(dat = dat, audit = audit))
+  use=rep(TRUE, nrow(df))
+  if (!is.na(fleetCol) && !is.null(fleets_keep_exact)) use[df[[fleetCol]] %in% fleets_keep_exact]=FALSE
+  if (!is.na(fleetCol) && !is.null(fleets_drop)) use[df[[fleetCol]] %in% fleets_drop]=FALSE
+  df[[obsCol]][use]=addLogn(df[[obsCol]][use], index_cv)
+  if (!is.na(seCol)) df[[seCol]][use]=index_cv
+  dat$CPUE=df
+  audit$before=before; audit$after=df
+  audit$summary=data.frame(component = "CPUE", rows_total = nrow(df), rows_modified = sum(use), fleets_keep_exact = paste(fleets_keep_exact %||% NA, collapse = ","), fleets_drop = paste(fleets_drop %||% NA, collapse = ","), cv = index_cv, stringsAsFactors = FALSE)
+  list(dat = dat, audit = audit)
+}
+
+inflateComps<-function(dat, min_comp_n = 500, fleets_keep_exact = NULL, verbose = TRUE) {
+  out_audit=data.frame()
+  for (slot in c("lencomp", "agecomp")) {
+    df=dat[[slot]]
+    if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) next
+    nsampCol=resolveCol(df, c("Nsamp", "nsamp"))
+    fleetCol=resolveCol(df, c("fleet", "fltsvy"))
+    if (is.na(nsampCol)) next
+    use=rep(TRUE, nrow(df))
+    if (!is.na(fleetCol) && !is.null(fleets_keep_exact)) use[df[[fleetCol]] %in% fleets_keep_exact]=FALSE
+    before_n=df[[nsampCol]]
+    df[[nsampCol]][use]=pmax(df[[nsampCol]][use], min_comp_n)
+    dat[[slot]]=df
+    out_audit=rbind.fill(out_audit, data.frame(component = slot, rows_total = nrow(df), rows_modified = sum(use & df[[nsampCol]] != before_n, na.rm = TRUE), fleets_keep_exact = paste(fleets_keep_exact %||% NA, collapse = ","), min_comp_n = min_comp_n, stringsAsFactors = FALSE))
+  }
+  list(dat = dat, audit = out_audit)
+}
+
+modCatch<-function(dat, catch_cv = 0.02, smooth_method =  c("ma","loess", "none")[1], loess_span = 0.3, ma_k = 3, fleets_smooth = NULL, fleets_keep_exact = NULL, years_keep_exact = NULL, verbose = TRUE) {
+  smooth_method="ma" #match.arg(smooth_method)
+  audit=list(summary = data.frame(), before = NULL, after = NULL)
+  if (is.null(dat$catch) || !is.data.frame(dat$catch) || nrow(dat$catch) == 0) return(list(dat = dat, audit = audit))
+  df=dat$catch; before=df
+  catchCol=resolveCol(df, c("catch", "catch_season", "totcatch"))
+  yearCol=resolveCol(df, c("year", "yr"))
+  fleetCol=resolveCol(df, c("fleet", "fltsvy", "season", "seas"))
+  if (is.na(catchCol) || is.na(yearCol)) return(list(dat = dat, audit = audit))
+  fleet_groups=if (is.na(fleetCol)) list(all = seq_len(nrow(df))) else split(seq_len(nrow(df)), df[[fleetCol]])
+  modified_rows=rep(FALSE, nrow(df)); smoothed_rows=rep(FALSE, nrow(df))
+  for (nm in names(fleet_groups)) {
+    ii=fleet_groups[[nm]]
+    thisFleet=if (is.na(fleetCol)) NA else unique(df[ii, fleetCol])[1]
+    mod=rep(TRUE, length(ii))
+    if (!is.null(fleets_keep_exact) && !is.na(thisFleet) && thisFleet %in% fleets_keep_exact) mod[]=FALSE
+    if (!is.null(years_keep_exact)) mod[df[ii, yearCol] %in% years_keep_exact]=FALSE
+    do_smooth=TRUE
+    if (!is.null(fleets_smooth) && !is.na(thisFleet)) do_smooth=thisFleet %in% fleets_smooth
+    if (smooth_method == "none") do_smooth=FALSE
+    vals=df[ii, catchCol]; yrs=df[ii, yearCol]
+    if (do_smooth) {
+      sm=smoothSeries(yrs, vals, method = smooth_method, loess_span = loess_span, ma_k = ma_k)
+      vals[mod]=sm[mod]
+      smoothed_rows[ii][mod]=TRUE
+    }
+    vals[mod]=addLogn(vals[mod], catch_cv)
+    modified_rows[ii][mod]=TRUE
+    df[ii, catchCol]=vals
+  }
+  dat$catch=df
+  audit$before=before; audit$after=df
+  audit$summary=data.frame(component = "catch", rows_total = nrow(df), rows_modified = sum(modified_rows), rows_smoothed = sum(smoothed_rows), fleets_smooth = paste(fleets_smooth %||% NA, collapse = ","), fleets_keep_exact = paste(fleets_keep_exact %||% NA, collapse = ","), years_keep_exact = paste(years_keep_exact %||% NA, collapse = ","), smooth_method = smooth_method, catch_cv = catch_cv, stringsAsFactors = FALSE)
+  list(dat = dat, audit = audit)
+}
+
+runSS<-function(dir, nohess=TRUE) {
+    old   =getwd(); on.exit(setwd(old), add = TRUE); setwd(dir)
+    
+    cmd   =paste(shQuote(ss3_exe), if (nohess) "-nohess", "")
+    status=system(cmd, intern = FALSE, ignore.stdout=TRUE, ignore.stderr=TRUE)
+    
+    if (!identical(status, 0L)) stop("SS3 run failed in ", dir)}
+  
+runAudit<-function(ssDir, 
+                   ss3_exe = "ss3", 
+                   version = "3.30", 
+                   index_cv = 0.05, 
+                   catch_cv = 0.02, 
+                   min_comp_n = 500, 
+                   catch_smooth =  c("ma","loess", "none")[1], 
+                   loess_span = 0.3, 
+                   ma_k = 3, 
+                   seed = 1, 
+                   fleets_keep_exact = NULL, 
+                   fleets_drop_indices = NULL, 
+                   fleets_smooth_catch = NULL, 
+                   fleets_keep_exact_catch = NULL, 
+                   years_keep_exact_catch = NULL, 
+                   final_dat_name = "data_pseudodata.ss", 
+                   audit_prefix = "pseudodata_audit", 
+                   run_base = TRUE, run_expval = TRUE, 
+                   run_final = TRUE, 
+                   final_nohess = FALSE, 
+                   verbose = TRUE) {
+  catch_smooth="ma" #match.arg(catch_smooth)
+  ssDir=normalizePath(ssDir, winslash = "/", mustWork = TRUE)
+  set.seed(seed)
+
+  st=r4ss::SS_readstarter(file.path(ssDir, "starter.ss"), verbose = FALSE)
+  orig_datfile=st$datfile %||% "data.ss"
+  if (run_base) {
+    st0=st; st0$N_bootstraps=0
+    r4ss::SS_writestarter(st0, dir = ssDir, overwrite = TRUE, verbose = FALSE)
+    runSS(ssDir, nohess = TRUE)}
+  
+  if (run_expval) {
+    st1=st; st1$N_bootstraps=2
+    r4ss::SS_writestarter(st1, dir = ssDir, overwrite = TRUE, verbose = FALSE)
+    runSS(ssDir, nohess = TRUE)}
+  
+  expval_file=file.path(ssDir, "data_expval.ss")
+  if (!file.exists(expval_file)) {
+    alt=file.path(ssDir, "data.ss_new")
+    if (file.exists(alt)) expval_file=alt}
+  
+  if (!file.exists(expval_file)) 
+    stop("Could not find expected-value data output from SS3.")
+  
+  dat=r4ss::SS_readdat(expval_file, version = version, verbose = FALSE)
+  
+  idx_res=modIndx(dat, index_cv = index_cv, fleets_keep_exact = fleets_keep_exact, fleets_drop = fleets_drop_indices, verbose = verbose); dat=idx_res$dat
+  comp_res=inflateComps(dat, min_comp_n = min_comp_n, fleets_keep_exact = fleets_keep_exact, verbose = verbose); dat=comp_res$dat
+  catch_res=modCatch(dat, catch_cv = catch_cv, smooth_method = catch_smooth, loess_span = loess_span, ma_k = ma_k, fleets_smooth = fleets_smooth_catch, fleets_keep_exact = fleets_keep_exact_catch, years_keep_exact = years_keep_exact_catch, verbose = verbose); dat=catch_res$dat
+  out_dat=file.path(ssDir, final_dat_name)
+  r4ss::SS_writedat(datlist = dat, outfile = out_dat, version = version, overwrite = TRUE, verbose = FALSE)
+  st2=st; st2$datfile=basename(out_dat); st2$N_bootstraps=0
+  r4ss::SS_writestarter(st2, dir = ssDir, overwrite = TRUE, verbose = FALSE)
+  if (run_final) runSS(ssDir, nohess = final_nohess)
+  audit_dir=file.path(ssDir, "audit")
+  if (!dir.exists(audit_dir)) dir.create(audit_dir, recursive = TRUE)
+  aud_main=rbind.fill(
+    data.frame(component = "run", item = "original_datfile", value = orig_datfile),
+    data.frame(component = "run", item = "expval_file", value = basename(expval_file)),
+    data.frame(component = "run", item = "final_datfile", value = basename(out_dat)),
+    data.frame(component = "run", item = "index_cv", value = index_cv),
+    data.frame(component = "run", item = "catch_cv", value = catch_cv),
+    data.frame(component = "run", item = "min_comp_n", value = min_comp_n),
+    data.frame(component = "run", item = "catch_smooth", value = catch_smooth),
+    data.frame(component = "run", item = "seed", value = seed)
+  )
+
+  utils::write.csv(aud_main, file.path(audit_dir, paste0(audit_prefix, "_run_settings.csv")), row.names = FALSE)
+  
+  aud_summary=do.call(rbind.fill, Filter(function(x) 
+    !is.null(x) && nrow(x) > 0, 
+    list(idx_res$audit$summary, 
+         comp_res$audit, 
+         catch_res$audit$summary)))
+  
+  if (!is.null(aud_summary) && nrow(aud_summary) > 0) utils::write.csv(aud_summary, file.path(audit_dir, paste0(audit_prefix, "_summary.csv")), row.names = FALSE)
+  if (!is.null(idx_res$audit$before)) {
+    utils::write.csv(idx_res$audit$before, file.path(audit_dir, paste0(audit_prefix, "_cpue_before.csv")), row.names = FALSE)
+    utils::write.csv(idx_res$audit$after, file.path(audit_dir, paste0(audit_prefix, "_cpue_after.csv")), row.names = FALSE)
+  }
+  if (!is.null(catch_res$audit$before)) {
+    utils::write.csv(catch_res$audit$before, file.path(audit_dir, paste0(audit_prefix, "_catch_before.csv")), row.names = FALSE)
+    utils::write.csv(catch_res$audit$after, file.path(audit_dir, paste0(audit_prefix, "_catch_after.csv")), row.names = FALSE)
+  }
+  invisible(list(ssDir = ssDir, original_datfile = orig_datfile, expval_file = basename(expval_file), final_datfile = basename(out_dat), audit_dir = audit_dir, audit_prefix = audit_prefix))
+}
+```
+
+# Batch wrapper with preflight gating
+
+```{r batch-functions}
+runOne<-function(task, task_id) {
+    stock=task$stock %||% paste0("stock", task_id)
+    scenario=task$scenario %||% paste0("scenario", task_id)
+    ssDir=normalizePath(task$ssDir, winslash = "/", mustWork = TRUE)
+    task_args=mergeLists(default_args, task$args %||% list())
+    task_args$ssDir=ssDir
+    if (is.null(task_args$audit_prefix) || identical(task_args$audit_prefix, "pseudodata_audit")) task_args$audit_prefix=paste0("audit_", gsub("[^A-Za-z0-9]+", "_", stock), "_", gsub("[^A-Za-z0-9]+", "_", scenario))
+    started=Sys.time()
+
+    pf_status="not_run"; pf_message=NA_character_
+    if (preflight) {
+      pf=try(preReport(ssDir = ssDir, version = task_args$version %||% "3.30", output_dir = file.path(ssDir, "audit"), prefix = paste0(task_args$audit_prefix, "_preflight"), verbose = FALSE), silent = TRUE)
+      if (inherits(pf, "try-error")) {
+        pf_status="error"; pf_message=as.character(pf)
+      } else {
+        pf_status="ok"
+        if (skip_on_preflight_flags && any(pf$input_notes$type == "flag")) {
+          ended=Sys.time()
+          return(list(summary = data.frame(task_id = task_id, stock = stock, scenario = scenario, ssDir = ssDir, preflight = pf_status, status = "skipped_preflight_flag", message = "Skipped because preflight produced flags.", start_time = as.character(started), end_time = as.character(ended), elapsed_sec = as.numeric(difftime(ended, started, units = "secs")), audit_dir = file.path(ssDir, "audit"), stringsAsFactors = FALSE), result = NULL))
+        }
+      }
+    }
+
+    out=try(do.call(pipeline_fun, task_args), silent = TRUE)
+    ended=Sys.time()
+    if (inherits(out, "try-error")) {
+      return(list(summary = data.frame(task_id = task_id, stock = stock, scenario = scenario, ssDir = ssDir, preflight = pf_status, status = "error", message = as.character(out), start_time = as.character(started), end_time = as.character(ended), elapsed_sec = as.numeric(difftime(ended, started, units = "secs")), audit_dir = NA_character_, stringsAsFactors = FALSE), result = NULL))
+    }
+    list(summary = data.frame(task_id = task_id, stock = stock, scenario = scenario, ssDir = ssDir, preflight = pf_status, status = "ok", message = pf_message, start_time = as.character(started), end_time = as.character(ended), elapsed_sec = as.numeric(difftime(ended, started, units = "secs")), audit_dir = out$audit_dir %||% NA_character_, stringsAsFactors = FALSE), result = out)
+}
+
+runBatch<-function(tasks, workers = NULL, parallel = TRUE, future_seed = TRUE, plan_strategy = "multisession", batch_audit_dir = "batch_audit", pipeline_fun = runAudit, default_args = list(ss3_exe = "ss3", version = "3.30", index_cv = 0.05, catch_cv = 0.02, min_comp_n = 500, catch_smooth = "ma", loess_span = 0.3, ma_k = 3, seed = 1, fleets_keep_exact = NULL, fleets_drop_indices = NULL, fleets_smooth_catch = NULL, fleets_keep_exact_catch = NULL, years_keep_exact_catch = NULL, final_dat_name = "data_pseudodata.ss", audit_prefix = "pseudodata_audit", run_base = TRUE, run_expval = TRUE, run_final = TRUE, final_nohess = FALSE, verbose = TRUE), preflight = TRUE, skip_on_preflight_flags = FALSE) 
+  {
+  if (!dir.exists(batch_audit_dir)) dir.create(batch_audit_dir, recursive = TRUE)
+  task_df=do.call(rbind.fill, lapply(seq_along(tasks), function(i) {
+    tt=tasks[[i]]
+    data.frame(task_id = i, stock = tt$stock %||% paste0("stock", i), scenario = tt$scenario %||% paste0("scenario", i), ssDir = tt$ssDir %||% NA_character_, stringsAsFactors = FALSE)
+  }))
+  utils::write.csv(task_df, file.path(batch_audit_dir, "batch_tasks.csv"), row.names = FALSE)
+  old_plan=future::plan(); on.exit(future::plan(old_plan), add = TRUE)
+  if (parallel) {
+    if (is.null(workers)) workers=future::availableCores()
+    if (identical(plan_strategy, "multisession")) future::plan(future::multisession, workers = workers)
+    if (identical(plan_strategy, "sequential")) future::plan(future::sequential)
+  } else future::plan(future::sequential)
+
+  idx=seq_along(tasks)
+  res=future.apply::future_lapply(idx, function(i) runOne(tasks[[i]], i), future.seed = future_seed)
+  batch_summary=do.call(rbind.fill, lapply(res, `[[`, "summary"))
+  utils::write.csv(batch_summary, file.path(batch_audit_dir, "batch_summary.csv"), row.names = FALSE)
+  audit_rows=lapply(res, function(x) {
+    rr=x$result
+    if (is.null(rr) || is.null(rr$audit_dir) || !dir.exists(rr$audit_dir)) return(NULL)
+    stock=x$summary$stock[1]; scenario=x$summary$scenario[1]
+    sumfile=list.files(rr$audit_dir, pattern = "_summary\\.csv$", full.names = TRUE)
+    if (length(sumfile) == 0) return(NULL)
+    df=try(utils::read.csv(sumfile[1], stringsAsFactors = FALSE), silent = TRUE)
+    if (inherits(df, "try-error")) return(NULL)
+    df$stock=stock; df$scenario=scenario; df
+  })
+  audit_rows=Filter(Negate(is.null), audit_rows)
+  if (length(audit_rows) > 0) utils::write.csv(do.call(rbind.fill, audit_rows), file.path(batch_audit_dir, "batch_component_summary.csv"), row.names = FALSE)
+  invisible(list(tasks = task_df, batch_summary = batch_summary, results = res, batch_audit_dir = normalizePath(batch_audit_dir, winslash = "/", mustWork = TRUE)))
+}
+
+stockScens<-function(stocks) {
+  out=list(); k=1
+  for (st in stocks) {
+    stock_name=st$stock %||% paste0("stock", k)
+    ssDir=st$ssDir %||% stop("Each stock needs ssDir")
+    scenarios=st$scenarios %||% list(list(name = "default", args = list()))
+    for (sc in scenarios) {
+      out[[k]]=list(stock = stock_name, scenario = sc$name %||% paste0("scenario", k), ssDir = ssDir, args = sc$args %||% list())
+      k=k + 1
+    }
+  }
+  out
+}
+```
+
+# Examples
+
+## Preflight one model
+
+```{r eval=params$run_preflight}
+params=list(ssDir=ssDir,version="3.30")
+pf<-preReport(
+  ssDir     = params$ssDir,
+  version   = params$version,
+  output_dir= file.path(params$ssDir, "audit"),
+  prefix    = "preflight")
+head(pf$input_summary)
+head(pf$input_notes)
+```
+
+## Run one pseudo-data scenario
+
+```{r eval=params$run_pipeline}
+res=runAudit(
+  ssDir = params$ssDir,
+  version = params$version,
+  index_cv = 0.03,
+  catch_cv = 0.01,
+  min_comp_n = 800,
+  catch_smooth = "ma",
+  loess_span = 0.25,
+  fleets_keep_exact = c(2),
+  fleets_smooth_catch = c(1),
+  fleets_keep_exact_catch = c(3),
+  years_keep_exact_catch = 2022:2024,
+  seed = 999,
+  final_nohess = FALSE)
+
+res
+```
+
+## Batch run with preflight
+
+```{r eval=params$run_batch_example}
+stocks=list(
+  list(
+    stock     = "herring",
+    ssDir = params$ssDir,  # <‑ was ssDir
+    scenarios = list(
+      list(name = "base_lowerr",
+           args = list(index_cv = 0.05, 
+                    catch_cv = 0.02, 
+                    seed = 101)),
+      list(name = "keep_recent_catch",
+           args = list(
+           index_cv              = 0.03,
+           catch_cv              = 0.01,
+           years_keep_exact_catch= 2022:2023,
+           seed                  = 102))
+  )))
+
+tasks=stockScens(stocks)
+
+batch_res=runBatch(
+  tasks                   = tasks,
+  workers                 = 2,
+  parallel                = TRUE,
+  future_seed             = TRUE,
+  plan_strategy           = "multisession",
+  batch_audit_dir         = file.path(params$ssDir, "batch_audit"),
+  preflight               = TRUE,
+  skip_on_preflight_flags = FALSE)
+
+batch_res$batch_summary
+```
+
+# Rendering
+
+This template is parameterized, so you can render the same file for different model directories and execution options by passing values through `params` in `rmarkdown::render()` [web:60][web:70][web:74]. Rendering from a fresh environment is generally safer for reproducibility in generated reports [web:70].
+
+```{r render-example, eval=FALSE}
+rmarkdown::render(
+  "ssPipeline.Rmd",
+  output_format = rmarkdown::html_document(toc = TRUE),
+  params = list(
+    ssDir = "/path/to/model",
+    version = "3.30",
+    run_preflight = TRUE,
+    run_pipeline = FALSE,
+    run_batch_example = FALSE
+  ),
+  envir = new.env()
+)
+```
+
+
+# Scenario folder builder
+
+```{r scenario-builder}
+copy_model_tree<-function(src_dir, dst_dir, overwrite = FALSE) {
+  src_dir=normalizePath(src_dir, winslash = "/", mustWork = TRUE)
+  if (dir.exists(dst_dir)) {
+    if (!overwrite) stop("Destination exists: ", dst_dir)
+    unlink(dst_dir, recursive = TRUE, force = TRUE)
+  }
+  dir.create(dst_dir, recursive = TRUE, showWarnings = FALSE)
+  files=list.files(src_dir, recursive = TRUE, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  rel=substring(files, nchar(src_dir) + 2)
+  dirs=files[file.info(files)$isdir]
+  if (length(dirs) > 0) {
+    rel_dirs=substring(dirs, nchar(src_dir) + 2)
+    for (dd in rel_dirs) dir.create(file.path(dst_dir, dd), recursive = TRUE, showWarnings = FALSE)
+  }
+  file_paths=files[!file.info(files)$isdir]
+  if (length(file_paths) > 0) {
+    rel_files=substring(file_paths, nchar(src_dir) + 2)
+    ok=file.copy(from = file_paths, to = file.path(dst_dir, rel_files), overwrite = overwrite, recursive = FALSE)
+    if (!all(ok)) warning("Some files were not copied from ", src_dir, " to ", dst_dir)
+  }
+  normalizePath(dst_dir, winslash = "/", mustWork = TRUE)
+}
+
+build_scenario_folders<-function(stocks, root_dir = "scenario_runs", overwrite = FALSE) {
+  if (!dir.exists(root_dir)) dir.create(root_dir, recursive = TRUE)
+  out=list(); k=1
+  rows=list()
+  for (st in stocks) {
+    stock_name=st$stock %||% paste0("stock", k)
+    base_ssDir=normalizePath(st$ssDir, winslash = "/", mustWork = TRUE)
+    scenarios=st$scenarios %||% list(list(name = "default", args = list()))
+    stock_root=file.path(root_dir, gsub("[^A-Za-z0-9]+", "_", stock_name))
+    dir.create(stock_root, recursive = TRUE, showWarnings = FALSE)
+    for (sc in scenarios) {
+      sc_name=sc$name %||% paste0("scenario", k)
+      run_dir=file.path(stock_root, gsub("[^A-Za-z0-9]+", "_", sc_name))
+      copy_model_tree(base_ssDir, run_dir, overwrite = overwrite)
+      out[[k]]=list(
+        stock = stock_name,
+        scenario = sc_name,
+        ssDir = normalizePath(run_dir, winslash = "/", mustWork = TRUE),
+        args = sc$args %||% list()
+      )
+      rows[[k]]=data.frame(
+        stock = stock_name,
+        scenario = sc_name,
+        base_ssDir = base_ssDir,
+        run_dir = normalizePath(run_dir, winslash = "/", mustWork = TRUE),
+        stringsAsFactors = FALSE
+      )
+      k=k + 1
+    }
+  }
+  map=do.call(rbind.fill, rows)
+  utils::write.csv(map, file.path(root_dir, "scenario_folder_map.csv"), row.names = FALSE)
+  list(tasks = out, map = map, root_dir = normalizePath(root_dir, winslash = "/", mustWork = TRUE))
+}
+```
+
+# End-to-end batch driver
+
+```{r end-to-end-driver}
+runSS3_simulator_campaign<-function(stocks,
+                                       scenario_root_dir = "scenario_runs",
+                                       overwrite = FALSE,
+                                       workers = NULL,
+                                       parallel = TRUE,
+                                       future_seed = TRUE,
+                                       plan_strategy = "multisession",
+                                       batch_audit_dir = "batch_audit",
+                                       preflight = TRUE,
+                                       skip_on_preflight_flags = FALSE,
+                                       default_args = list(ss3_exe = "ss3",
+                                                           version = "3.30",
+                                                           index_cv = 0.05,
+                                                           catch_cv = 0.02,
+                                                           min_comp_n = 500,
+                                                           catch_smooth =  c("ma","loess", "none")[1],
+                                                           loess_span = 0.3,
+                                                           ma_k = 3,
+                                                           seed = 1,
+                                                           fleets_keep_exact = NULL,
+                                                           fleets_drop_indices = NULL,
+                                                           fleets_smooth_catch = NULL,
+                                                           fleets_keep_exact_catch = NULL,
+                                                           years_keep_exact_catch = NULL,
+                                                           final_dat_name = "data_pseudodata.ss",
+                                                           audit_prefix = "pseudodata_audit",
+                                                           run_base = TRUE,
+                                                           run_expval = TRUE,
+                                                           run_final = TRUE,
+                                                           final_nohess = FALSE,
+                                                           verbose = TRUE)) {
+  built=build_scenario_folders(
+    stocks = stocks,
+    root_dir = scenario_root_dir,
+    overwrite = overwrite
+  )
+
+  batch=runBatch(
+    tasks = built$tasks,
+    workers = workers,
+    parallel = parallel,
+    future_seed = future_seed,
+    plan_strategy = plan_strategy,
+    batch_audit_dir = batch_audit_dir,
+    default_args = default_args,
+    preflight = preflight,
+    skip_on_preflight_flags = skip_on_preflight_flags
+  )
+
+  invisible(list(
+    built = built,
+    batch = batch
+  ))
+}
+```
+
+# Full campaign example
+
+```{r full-campaign-example, eval=FALSE}
+camp=runSS3_simulator_campaign(
+  stocks = stocks,
+  scenario_root_dir = "scenario_runs",
+  overwrite = FALSE,
+  workers = 4,
+  parallel = TRUE,
+  future_seed = TRUE,
+  plan_strategy = "multisession",
+  batch_audit_dir = "batch_audit",
+  preflight = !TRUE,
+  skip_on_preflight_flags = FALSE)
+```
+
+
+# Batch rendering helper
+
+```{r batch-render-helper, eval=FALSE}
+# Example pattern for rendering multiple stock-specific reports from the same template
+library(rmarkdown)
+reports=data.frame(
+  ssDir = c("/path/to/cod", "/path/to/hake"),
+  output_file = c("cod_report.html", "hake_report.html"),
+  stringsAsFactors = FALSE)
+
+for (i in seq_len(nrow(reports))) {
+  rmarkdown::render(
+    input = "ssPipeline.Rmd",
+    output_file = reports$output_file[i],
+    params = list(
+      ssDir = reports$ssDir[i],
+      version = "3.30",
+      run_preflight = TRUE,
+      run_pipeline = FALSE,
+      run_batch_example = FALSE
+    ),
+    envir = new.env())}
+```
+
+```{r}
+f0=ss3om::readFLSss3("C:/active/flr/sstruth/data/ss3/herring")
+f1=ss3om::readFLSss3("C:/active/flr/sstruth/Rmd/scenario_runs/herring/base_lowerr")
+f2=ss3om::readFLSss3("C:/active/flr/sstruth/Rmd/scenario_runs/herring/keep_recent_catch")
+
+p0=ss3om::readFLSss3("C:/active/flr/sstruth/data/ss3/pol")
+
+t0=SS_output("C:/active/flr/sstruth/data/ss3/pol")
+t1=SS_output("C:/active/flr/sstruth/Rmd/scenario_runs/herring/base_lowerr")
+t2=SS_output("C:/active/flr/sstruth/Rmd/scenario_runs/herring/keep_recent_catch")
+
+par(mfrow = c(1, 3))
+acf(t0$recruit$dev[!is.na(t0$recruit$dev)], main = "Original fit")
+acf(t1$recruit$dev[!is.na(t1$recruit$dev)], main = "Original fit")
+acf(t2$recruit$dev[!is.na(t2$recruit$dev)], main = "Original fit")
+par(mfrow = c(1, 1))
+
+```

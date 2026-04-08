@@ -1,0 +1,14 @@
+^\\.Rproj\\.user$
+^\\.Rproj$
+^README\\.md$
+^Rmd$
+^data$
+^terminals$
+^.*\\.RData$
+^.*\\.rds$
+^.*\\.png$
+^.*\\.csv$
+^.*\\.ss(o|_new)?$
+^.*\\.SS$
+^.*\\.ss3(\\.\\w+)?$
+
