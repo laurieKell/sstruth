@@ -15,17 +15,19 @@ Depends:
     R (>= 4.0.0)
 Imports:
     diags,
-    FCore,
-    FLBRP,
-    FLRebuild,
-    FLasher,
     future,
     future.apply,
+    methods,
     plyr,
     r4ss,
     ss3om,
     stats
 Suggests:
+    FCore,
+    FLBRP,
+    FLRebuild,
+    FLasher,
+    JABBA,
     knitr,
     rmarkdown
 VignetteBuilder: knitr

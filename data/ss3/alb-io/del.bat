@@ -1,0 +1,21 @@
+rm report.*
+rm *.ss_new
+rm *.sso
+rm *.log
+rm *.tmp
+rm ss*.r0*
+rm ss*.p0*
+rm ss*.b0*
+rm ss*.bar
+rm ss*.rep
+rm ss*.dep
+rm ss*.eva
+rm ss*.cor
+rm ss*.std
+rm *.cov
+rm *.dep
+rm *.hes 
+rm data_*.ss
+rm variance
+rm runnumber.ss
+

@@ -1,0 +1,1758 @@
+#V3.30.23.2;_safe;_compile_date:_Apr 17 2025;_Stock_Synthesis_by_Richard_Methot_(NOAA)_using_ADMB_13.2
+data.ss #_DataFile 
+control.ss #_Control 
+Run_Date: Tue Apr  7 09:31:36 2026
+Final_phase: 6  N_iterations: 625
+#_LIKELIHOOD 
+Label logL*Lambda
+TOTAL_LogL 911.965
+Catch 1.09299e-08
+Equil_catch 0.0153572
+Survey -36.424
+Age_comp 950.304
+Recruitment -7.72494
+InitEQ_regime 0
+Sum_recdevs -0.582613
+Forecast_Recruitment 0.00537221
+Parm_priors 5.78603
+Parm_softbounds 0.00381959
+Parm_devs 0
+F_Ballpark 0
+Crash_Pen 0
+#_PARAMETERS
+#label value se active? range
+#_BIOLOGY
+NatM_break_1_Fem_GP_1 0.466 0 Fix 0.15913
+NatM_break_2_Fem_GP_1 0.436 0 Fix 0.146087
+NatM_break_3_Fem_GP_1 0.299 0 Fix 0.0865217
+NatM_break_4_Fem_GP_1 0.237 0 Fix 0.0595652
+NatM_break_5_Fem_GP_1 0.216 0 Fix 0.0504348
+NatM_break_6_Fem_GP_1 0.202 0 Fix 0.0443478
+NatM_break_7_Fem_GP_1 0.2 0 Fix 0.0434782
+NatM_break_8_Fem_GP_1 0.185 0 Fix 0.0369565
+NatM_break_9_Fem_GP_1 0.155 0 Fix 0.023913
+L_at_Amin_Fem_GP_1 4 0 Fix 0.2
+L_at_Amax_Fem_GP_1 35 0 Fix 0.625
+VonBert_K_Fem_GP_1 0.2 0 Fix 0.2
+CV_young_Fem_GP_1 0.2 0 Fix 0.333333
+CV_old_Fem_GP_1 0.2 0 Fix 0.166666
+Wtlen_1_Fem_GP_1 4e-06 0 Fix 0.500001
+Wtlen_2_Fem_GP_1 3.05 0 Fix 0.864286
+Mat50%_Fem_GP_1 0.13 0 Fix 0.0216667
+Mat_slope_Fem_GP_1 -4.149 0 Fix 0.106375
+Eggs/kg_inter_Fem_GP_1 1 0 Fix 0.666667
+Eggs/kg_slope_wt_Fem_GP_1 0 0 Fix 0.5
+CohortGrowDev 1 0 Fix 0.0909091
+FracFemale_GP_1 0.5 0 Fix 0.499999
+NatM_break_1_Fem_GP_1_BLK1repl_1903 0.466 0 Fix 0.141017
+NatM_break_1_Fem_GP_1_BLK1repl_1975 0.397 0 Fix 0.117627
+NatM_break_1_Fem_GP_1_BLK1repl_1976 0.389 0 Fix 0.114915
+NatM_break_1_Fem_GP_1_BLK1repl_1977 0.532 0 Fix 0.16339
+NatM_break_1_Fem_GP_1_BLK1repl_1978 0.737 0 Fix 0.232881
+NatM_break_1_Fem_GP_1_BLK1repl_1979 0.823 0 Fix 0.262034
+NatM_break_1_Fem_GP_1_BLK1repl_1980 0.715 0 Fix 0.225424
+NatM_break_1_Fem_GP_1_BLK1repl_1981 0.724 0 Fix 0.228474
+NatM_break_1_Fem_GP_1_BLK1repl_1982 0.675 0 Fix 0.211864
+NatM_break_1_Fem_GP_1_BLK1repl_1983 0.608 0 Fix 0.189152
+NatM_break_1_Fem_GP_1_BLK1repl_1984 0.503 0 Fix 0.153559
+NatM_break_1_Fem_GP_1_BLK1repl_1985 0.45 0 Fix 0.135593
+NatM_break_1_Fem_GP_1_BLK1repl_1986 0.416 0 Fix 0.124068
+NatM_break_1_Fem_GP_1_BLK1repl_1987 0.45 0 Fix 0.135593
+NatM_break_1_Fem_GP_1_BLK1repl_1988 0.395 0 Fix 0.116949
+NatM_break_1_Fem_GP_1_BLK1repl_1989 0.301 0 Fix 0.0850847
+NatM_break_1_Fem_GP_1_BLK1repl_1990 0.189 0 Fix 0.0471186
+NatM_break_1_Fem_GP_1_BLK1repl_1991 0.152 0 Fix 0.0345763
+NatM_break_1_Fem_GP_1_BLK1repl_1992 0.184 0 Fix 0.0454237
+NatM_break_1_Fem_GP_1_BLK1repl_1993 0.236 0 Fix 0.0630508
+NatM_break_1_Fem_GP_1_BLK1repl_1994 0.206 0 Fix 0.0528813
+NatM_break_1_Fem_GP_1_BLK1repl_1995 0.179 0 Fix 0.0437288
+NatM_break_1_Fem_GP_1_BLK1repl_1996 0.154 0 Fix 0.0352542
+NatM_break_1_Fem_GP_1_BLK1repl_1997 0.139 0 Fix 0.0301695
+NatM_break_1_Fem_GP_1_BLK1repl_1998 0.163 0 Fix 0.0383051
+NatM_break_1_Fem_GP_1_BLK1repl_1999 0.187 0 Fix 0.0464407
+NatM_break_1_Fem_GP_1_BLK1repl_2000 0.212 0 Fix 0.0549152
+NatM_break_1_Fem_GP_1_BLK1repl_2001 0.222 0 Fix 0.0583051
+NatM_break_1_Fem_GP_1_BLK1repl_2002 0.209 0 Fix 0.0538983
+NatM_break_1_Fem_GP_1_BLK1repl_2003 0.176 0 Fix 0.0427118
+NatM_break_1_Fem_GP_1_BLK1repl_2004 0.203 0 Fix 0.0518644
+NatM_break_1_Fem_GP_1_BLK1repl_2005 0.247 0 Fix 0.0667796
+NatM_break_1_Fem_GP_1_BLK1repl_2006 0.249 0 Fix 0.0674576
+NatM_break_1_Fem_GP_1_BLK1repl_2007 0.262 0 Fix 0.0718644
+NatM_break_1_Fem_GP_1_BLK1repl_2008 0.267 0 Fix 0.0735593
+NatM_break_1_Fem_GP_1_BLK1repl_2009 0.297 0 Fix 0.0837288
+NatM_break_1_Fem_GP_1_BLK1repl_2010 0.317 0 Fix 0.0905084
+NatM_break_1_Fem_GP_1_BLK1repl_2011 0.295 0 Fix 0.0830508
+NatM_break_1_Fem_GP_1_BLK1repl_2012 0.276 0 Fix 0.0766101
+NatM_break_1_Fem_GP_1_BLK1repl_2013 0.292 0 Fix 0.0820339
+NatM_break_1_Fem_GP_1_BLK1repl_2014 0.237 0 Fix 0.0633898
+NatM_break_1_Fem_GP_1_BLK1repl_2015 0.221 0 Fix 0.0579661
+NatM_break_1_Fem_GP_1_BLK1repl_2016 0.198 0 Fix 0.0501695
+NatM_break_1_Fem_GP_1_BLK1repl_2017 0.179 0 Fix 0.0437288
+NatM_break_1_Fem_GP_1_BLK1repl_2018 0.177 0 Fix 0.0430508
+NatM_break_1_Fem_GP_1_BLK1repl_2019 0.158 0 Fix 0.0366102
+NatM_break_1_Fem_GP_1_BLK1repl_2020 0.154 0 Fix 0.0352542
+NatM_break_1_Fem_GP_1_BLK1repl_2021 0.14 0 Fix 0.0305085
+NatM_break_1_Fem_GP_1_BLK1repl_2022 0.14 0 Fix 0.0305085
+NatM_break_1_Fem_GP_1_BLK1repl_2023 0.14 0 Fix 0.0305085
+NatM_break_1_Fem_GP_1_BLK1repl_2024 0.14 0 Fix 0.0305085
+NatM_break_2_Fem_GP_1_BLK1repl_1903 0.436 0 Fix 0.130847
+NatM_break_2_Fem_GP_1_BLK1repl_1975 0.483 0 Fix 0.14678
+NatM_break_2_Fem_GP_1_BLK1repl_1976 0.415 0 Fix 0.123729
+NatM_break_2_Fem_GP_1_BLK1repl_1977 0.464 0 Fix 0.140339
+NatM_break_2_Fem_GP_1_BLK1repl_1978 0.695 0 Fix 0.218644
+NatM_break_2_Fem_GP_1_BLK1repl_1979 0.88 0 Fix 0.281356
+NatM_break_2_Fem_GP_1_BLK1repl_1980 0.897 0 Fix 0.287119
+NatM_break_2_Fem_GP_1_BLK1repl_1981 0.81 0 Fix 0.257627
+NatM_break_2_Fem_GP_1_BLK1repl_1982 0.828 0 Fix 0.263729
+NatM_break_2_Fem_GP_1_BLK1repl_1983 0.738 0 Fix 0.23322
+NatM_break_2_Fem_GP_1_BLK1repl_1984 0.631 0 Fix 0.196949
+NatM_break_2_Fem_GP_1_BLK1repl_1985 0.537 0 Fix 0.165085
+NatM_break_2_Fem_GP_1_BLK1repl_1986 0.489 0 Fix 0.148814
+NatM_break_2_Fem_GP_1_BLK1repl_1987 0.497 0 Fix 0.151525
+NatM_break_2_Fem_GP_1_BLK1repl_1988 0.506 0 Fix 0.154576
+NatM_break_2_Fem_GP_1_BLK1repl_1989 0.419 0 Fix 0.125085
+NatM_break_2_Fem_GP_1_BLK1repl_1990 0.275 0 Fix 0.0762712
+NatM_break_2_Fem_GP_1_BLK1repl_1991 0.214 0 Fix 0.0555932
+NatM_break_2_Fem_GP_1_BLK1repl_1992 0.222 0 Fix 0.0583051
+NatM_break_2_Fem_GP_1_BLK1repl_1993 0.285 0 Fix 0.079661
+NatM_break_2_Fem_GP_1_BLK1repl_1994 0.294 0 Fix 0.0827118
+NatM_break_2_Fem_GP_1_BLK1repl_1995 0.256 0 Fix 0.0698305
+NatM_break_2_Fem_GP_1_BLK1repl_1996 0.221 0 Fix 0.0579661
+NatM_break_2_Fem_GP_1_BLK1repl_1997 0.197 0 Fix 0.0498305
+NatM_break_2_Fem_GP_1_BLK1repl_1998 0.203 0 Fix 0.0518644
+NatM_break_2_Fem_GP_1_BLK1repl_1999 0.23 0 Fix 0.0610169
+NatM_break_2_Fem_GP_1_BLK1repl_2000 0.351 0 Fix 0.102034
+NatM_break_2_Fem_GP_1_BLK1repl_2001 0.372 0 Fix 0.109153
+NatM_break_2_Fem_GP_1_BLK1repl_2002 0.384 0 Fix 0.11322
+NatM_break_2_Fem_GP_1_BLK1repl_2003 0.337 0 Fix 0.0972881
+NatM_break_2_Fem_GP_1_BLK1repl_2004 0.309 0 Fix 0.0877966
+NatM_break_2_Fem_GP_1_BLK1repl_2005 0.366 0 Fix 0.107119
+NatM_break_2_Fem_GP_1_BLK1repl_2006 0.4 0 Fix 0.118644
+NatM_break_2_Fem_GP_1_BLK1repl_2007 0.407 0 Fix 0.121017
+NatM_break_2_Fem_GP_1_BLK1repl_2008 0.431 0 Fix 0.129152
+NatM_break_2_Fem_GP_1_BLK1repl_2009 0.445 0 Fix 0.133898
+NatM_break_2_Fem_GP_1_BLK1repl_2010 0.491 0 Fix 0.149491
+NatM_break_2_Fem_GP_1_BLK1repl_2011 0.5 0 Fix 0.152542
+NatM_break_2_Fem_GP_1_BLK1repl_2012 0.448 0 Fix 0.134915
+NatM_break_2_Fem_GP_1_BLK1repl_2013 0.429 0 Fix 0.128475
+NatM_break_2_Fem_GP_1_BLK1repl_2014 0.434 0 Fix 0.130169
+NatM_break_2_Fem_GP_1_BLK1repl_2015 0.36 0 Fix 0.105085
+NatM_break_2_Fem_GP_1_BLK1repl_2016 0.339 0 Fix 0.0979661
+NatM_break_2_Fem_GP_1_BLK1repl_2017 0.307 0 Fix 0.0871186
+NatM_break_2_Fem_GP_1_BLK1repl_2018 0.288 0 Fix 0.0806779
+NatM_break_2_Fem_GP_1_BLK1repl_2019 0.285 0 Fix 0.079661
+NatM_break_2_Fem_GP_1_BLK1repl_2020 0.268 0 Fix 0.0738983
+NatM_break_2_Fem_GP_1_BLK1repl_2021 0.262 0 Fix 0.0718644
+NatM_break_2_Fem_GP_1_BLK1repl_2022 0.262 0 Fix 0.0718644
+NatM_break_2_Fem_GP_1_BLK1repl_2023 0.262 0 Fix 0.0718644
+NatM_break_2_Fem_GP_1_BLK1repl_2024 0.262 0 Fix 0.0718644
+NatM_break_3_Fem_GP_1_BLK1repl_1903 0.299 0 Fix 0.0844068
+NatM_break_3_Fem_GP_1_BLK1repl_1975 0.332 0 Fix 0.0955932
+NatM_break_3_Fem_GP_1_BLK1repl_1976 0.296 0 Fix 0.0833898
+NatM_break_3_Fem_GP_1_BLK1repl_1977 0.316 0 Fix 0.0901695
+NatM_break_3_Fem_GP_1_BLK1repl_1978 0.379 0 Fix 0.111525
+NatM_break_3_Fem_GP_1_BLK1repl_1979 0.407 0 Fix 0.121017
+NatM_break_3_Fem_GP_1_BLK1repl_1980 0.519 0 Fix 0.158983
+NatM_break_3_Fem_GP_1_BLK1repl_1981 0.501 0 Fix 0.152881
+NatM_break_3_Fem_GP_1_BLK1repl_1982 0.481 0 Fix 0.146102
+NatM_break_3_Fem_GP_1_BLK1repl_1983 0.535 0 Fix 0.164407
+NatM_break_3_Fem_GP_1_BLK1repl_1984 0.477 0 Fix 0.144746
+NatM_break_3_Fem_GP_1_BLK1repl_1985 0.427 0 Fix 0.127797
+NatM_break_3_Fem_GP_1_BLK1repl_1986 0.367 0 Fix 0.107458
+NatM_break_3_Fem_GP_1_BLK1repl_1987 0.3 0 Fix 0.0847457
+NatM_break_3_Fem_GP_1_BLK1repl_1988 0.36 0 Fix 0.105085
+NatM_break_3_Fem_GP_1_BLK1repl_1989 0.273 0 Fix 0.0755932
+NatM_break_3_Fem_GP_1_BLK1repl_1990 0.191 0 Fix 0.0477966
+NatM_break_3_Fem_GP_1_BLK1repl_1991 0.173 0 Fix 0.0416949
+NatM_break_3_Fem_GP_1_BLK1repl_1992 0.175 0 Fix 0.0423729
+NatM_break_3_Fem_GP_1_BLK1repl_1993 0.229 0 Fix 0.0606779
+NatM_break_3_Fem_GP_1_BLK1repl_1994 0.236 0 Fix 0.0630508
+NatM_break_3_Fem_GP_1_BLK1repl_1995 0.213 0 Fix 0.0552542
+NatM_break_3_Fem_GP_1_BLK1repl_1996 0.196 0 Fix 0.0494915
+NatM_break_3_Fem_GP_1_BLK1repl_1997 0.179 0 Fix 0.0437288
+NatM_break_3_Fem_GP_1_BLK1repl_1998 0.171 0 Fix 0.0410169
+NatM_break_3_Fem_GP_1_BLK1repl_1999 0.188 0 Fix 0.0467796
+NatM_break_3_Fem_GP_1_BLK1repl_2000 0.256 0 Fix 0.0698305
+NatM_break_3_Fem_GP_1_BLK1repl_2001 0.27 0 Fix 0.0745762
+NatM_break_3_Fem_GP_1_BLK1repl_2002 0.287 0 Fix 0.080339
+NatM_break_3_Fem_GP_1_BLK1repl_2003 0.23 0 Fix 0.0610169
+NatM_break_3_Fem_GP_1_BLK1repl_2004 0.28 0 Fix 0.0779661
+NatM_break_3_Fem_GP_1_BLK1repl_2005 0.31 0 Fix 0.0881356
+NatM_break_3_Fem_GP_1_BLK1repl_2006 0.271 0 Fix 0.0749152
+NatM_break_3_Fem_GP_1_BLK1repl_2007 0.289 0 Fix 0.0810169
+NatM_break_3_Fem_GP_1_BLK1repl_2008 0.291 0 Fix 0.0816949
+NatM_break_3_Fem_GP_1_BLK1repl_2009 0.318 0 Fix 0.0908474
+NatM_break_3_Fem_GP_1_BLK1repl_2010 0.359 0 Fix 0.104746
+NatM_break_3_Fem_GP_1_BLK1repl_2011 0.328 0 Fix 0.0942373
+NatM_break_3_Fem_GP_1_BLK1repl_2012 0.256 0 Fix 0.0698305
+NatM_break_3_Fem_GP_1_BLK1repl_2013 0.276 0 Fix 0.0766101
+NatM_break_3_Fem_GP_1_BLK1repl_2014 0.282 0 Fix 0.078644
+NatM_break_3_Fem_GP_1_BLK1repl_2015 0.241 0 Fix 0.0647457
+NatM_break_3_Fem_GP_1_BLK1repl_2016 0.298 0 Fix 0.0840678
+NatM_break_3_Fem_GP_1_BLK1repl_2017 0.234 0 Fix 0.0623729
+NatM_break_3_Fem_GP_1_BLK1repl_2018 0.213 0 Fix 0.0552542
+NatM_break_3_Fem_GP_1_BLK1repl_2019 0.201 0 Fix 0.0511864
+NatM_break_3_Fem_GP_1_BLK1repl_2020 0.198 0 Fix 0.0501695
+NatM_break_3_Fem_GP_1_BLK1repl_2021 0.196 0 Fix 0.0494915
+NatM_break_3_Fem_GP_1_BLK1repl_2022 0.196 0 Fix 0.0494915
+NatM_break_3_Fem_GP_1_BLK1repl_2023 0.196 0 Fix 0.0494915
+NatM_break_3_Fem_GP_1_BLK1repl_2024 0.196 0 Fix 0.0494915
+NatM_break_4_Fem_GP_1_BLK1repl_1903 0.237 0 Fix 0.0633898
+NatM_break_4_Fem_GP_1_BLK1repl_1975 0.263 0 Fix 0.0722034
+NatM_break_4_Fem_GP_1_BLK1repl_1976 0.244 0 Fix 0.0657627
+NatM_break_4_Fem_GP_1_BLK1repl_1977 0.258 0 Fix 0.0705085
+NatM_break_4_Fem_GP_1_BLK1repl_1978 0.33 0 Fix 0.0949152
+NatM_break_4_Fem_GP_1_BLK1repl_1979 0.341 0 Fix 0.098644
+NatM_break_4_Fem_GP_1_BLK1repl_1980 0.41 0 Fix 0.122034
+NatM_break_4_Fem_GP_1_BLK1repl_1981 0.386 0 Fix 0.113898
+NatM_break_4_Fem_GP_1_BLK1repl_1982 0.388 0 Fix 0.114576
+NatM_break_4_Fem_GP_1_BLK1repl_1983 0.368 0 Fix 0.107797
+NatM_break_4_Fem_GP_1_BLK1repl_1984 0.364 0 Fix 0.106441
+NatM_break_4_Fem_GP_1_BLK1repl_1985 0.315 0 Fix 0.0898305
+NatM_break_4_Fem_GP_1_BLK1repl_1986 0.322 0 Fix 0.0922034
+NatM_break_4_Fem_GP_1_BLK1repl_1987 0.254 0 Fix 0.0691525
+NatM_break_4_Fem_GP_1_BLK1repl_1988 0.252 0 Fix 0.0684746
+NatM_break_4_Fem_GP_1_BLK1repl_1989 0.274 0 Fix 0.0759322
+NatM_break_4_Fem_GP_1_BLK1repl_1990 0.168 0 Fix 0.04
+NatM_break_4_Fem_GP_1_BLK1repl_1991 0.146 0 Fix 0.0325424
+NatM_break_4_Fem_GP_1_BLK1repl_1992 0.151 0 Fix 0.0342373
+NatM_break_4_Fem_GP_1_BLK1repl_1993 0.188 0 Fix 0.0467796
+NatM_break_4_Fem_GP_1_BLK1repl_1994 0.204 0 Fix 0.0522034
+NatM_break_4_Fem_GP_1_BLK1repl_1995 0.194 0 Fix 0.0488135
+NatM_break_4_Fem_GP_1_BLK1repl_1996 0.173 0 Fix 0.0416949
+NatM_break_4_Fem_GP_1_BLK1repl_1997 0.159 0 Fix 0.0369491
+NatM_break_4_Fem_GP_1_BLK1repl_1998 0.155 0 Fix 0.0355932
+NatM_break_4_Fem_GP_1_BLK1repl_1999 0.164 0 Fix 0.0386441
+NatM_break_4_Fem_GP_1_BLK1repl_2000 0.241 0 Fix 0.0647457
+NatM_break_4_Fem_GP_1_BLK1repl_2001 0.235 0 Fix 0.0627118
+NatM_break_4_Fem_GP_1_BLK1repl_2002 0.25 0 Fix 0.0677966
+NatM_break_4_Fem_GP_1_BLK1repl_2003 0.21 0 Fix 0.0542373
+NatM_break_4_Fem_GP_1_BLK1repl_2004 0.217 0 Fix 0.0566102
+NatM_break_4_Fem_GP_1_BLK1repl_2005 0.277 0 Fix 0.0769491
+NatM_break_4_Fem_GP_1_BLK1repl_2006 0.267 0 Fix 0.0735593
+NatM_break_4_Fem_GP_1_BLK1repl_2007 0.261 0 Fix 0.0715254
+NatM_break_4_Fem_GP_1_BLK1repl_2008 0.267 0 Fix 0.0735593
+NatM_break_4_Fem_GP_1_BLK1repl_2009 0.267 0 Fix 0.0735593
+NatM_break_4_Fem_GP_1_BLK1repl_2010 0.295 0 Fix 0.0830508
+NatM_break_4_Fem_GP_1_BLK1repl_2011 0.302 0 Fix 0.0854237
+NatM_break_4_Fem_GP_1_BLK1repl_2012 0.262 0 Fix 0.0718644
+NatM_break_4_Fem_GP_1_BLK1repl_2013 0.215 0 Fix 0.0559322
+NatM_break_4_Fem_GP_1_BLK1repl_2014 0.229 0 Fix 0.0606779
+NatM_break_4_Fem_GP_1_BLK1repl_2015 0.213 0 Fix 0.0552542
+NatM_break_4_Fem_GP_1_BLK1repl_2016 0.211 0 Fix 0.0545763
+NatM_break_4_Fem_GP_1_BLK1repl_2017 0.216 0 Fix 0.0562712
+NatM_break_4_Fem_GP_1_BLK1repl_2018 0.179 0 Fix 0.0437288
+NatM_break_4_Fem_GP_1_BLK1repl_2019 0.186 0 Fix 0.0461017
+NatM_break_4_Fem_GP_1_BLK1repl_2020 0.176 0 Fix 0.0427118
+NatM_break_4_Fem_GP_1_BLK1repl_2021 0.183 0 Fix 0.0450847
+NatM_break_4_Fem_GP_1_BLK1repl_2022 0.183 0 Fix 0.0450847
+NatM_break_4_Fem_GP_1_BLK1repl_2023 0.183 0 Fix 0.0450847
+NatM_break_4_Fem_GP_1_BLK1repl_2024 0.183 0 Fix 0.0450847
+NatM_break_5_Fem_GP_1_BLK1repl_1903 0.216 0 Fix 0.0562712
+NatM_break_5_Fem_GP_1_BLK1repl_1975 0.239 0 Fix 0.0640678
+NatM_break_5_Fem_GP_1_BLK1repl_1976 0.223 0 Fix 0.058644
+NatM_break_5_Fem_GP_1_BLK1repl_1977 0.237 0 Fix 0.0633898
+NatM_break_5_Fem_GP_1_BLK1repl_1978 0.308 0 Fix 0.0874576
+NatM_break_5_Fem_GP_1_BLK1repl_1979 0.327 0 Fix 0.0938983
+NatM_break_5_Fem_GP_1_BLK1repl_1980 0.363 0 Fix 0.106102
+NatM_break_5_Fem_GP_1_BLK1repl_1981 0.33 0 Fix 0.0949152
+NatM_break_5_Fem_GP_1_BLK1repl_1982 0.322 0 Fix 0.0922034
+NatM_break_5_Fem_GP_1_BLK1repl_1983 0.341 0 Fix 0.098644
+NatM_break_5_Fem_GP_1_BLK1repl_1984 0.288 0 Fix 0.0806779
+NatM_break_5_Fem_GP_1_BLK1repl_1985 0.264 0 Fix 0.0725423
+NatM_break_5_Fem_GP_1_BLK1repl_1986 0.249 0 Fix 0.0674576
+NatM_break_5_Fem_GP_1_BLK1repl_1987 0.237 0 Fix 0.0633898
+NatM_break_5_Fem_GP_1_BLK1repl_1988 0.24 0 Fix 0.0644068
+NatM_break_5_Fem_GP_1_BLK1repl_1989 0.225 0 Fix 0.059322
+NatM_break_5_Fem_GP_1_BLK1repl_1990 0.175 0 Fix 0.0423729
+NatM_break_5_Fem_GP_1_BLK1repl_1991 0.129 0 Fix 0.0267797
+NatM_break_5_Fem_GP_1_BLK1repl_1992 0.126 0 Fix 0.0257627
+NatM_break_5_Fem_GP_1_BLK1repl_1993 0.171 0 Fix 0.0410169
+NatM_break_5_Fem_GP_1_BLK1repl_1994 0.174 0 Fix 0.0420339
+NatM_break_5_Fem_GP_1_BLK1repl_1995 0.175 0 Fix 0.0423729
+NatM_break_5_Fem_GP_1_BLK1repl_1996 0.163 0 Fix 0.0383051
+NatM_break_5_Fem_GP_1_BLK1repl_1997 0.15 0 Fix 0.0338983
+NatM_break_5_Fem_GP_1_BLK1repl_1998 0.14 0 Fix 0.0305085
+NatM_break_5_Fem_GP_1_BLK1repl_1999 0.154 0 Fix 0.0352542
+NatM_break_5_Fem_GP_1_BLK1repl_2000 0.229 0 Fix 0.0606779
+NatM_break_5_Fem_GP_1_BLK1repl_2001 0.23 0 Fix 0.0610169
+NatM_break_5_Fem_GP_1_BLK1repl_2002 0.226 0 Fix 0.059661
+NatM_break_5_Fem_GP_1_BLK1repl_2003 0.199 0 Fix 0.0505085
+NatM_break_5_Fem_GP_1_BLK1repl_2004 0.204 0 Fix 0.0522034
+NatM_break_5_Fem_GP_1_BLK1repl_2005 0.229 0 Fix 0.0606779
+NatM_break_5_Fem_GP_1_BLK1repl_2006 0.252 0 Fix 0.0684746
+NatM_break_5_Fem_GP_1_BLK1repl_2007 0.241 0 Fix 0.0647457
+NatM_break_5_Fem_GP_1_BLK1repl_2008 0.244 0 Fix 0.0657627
+NatM_break_5_Fem_GP_1_BLK1repl_2009 0.256 0 Fix 0.0698305
+NatM_break_5_Fem_GP_1_BLK1repl_2010 0.257 0 Fix 0.0701695
+NatM_break_5_Fem_GP_1_BLK1repl_2011 0.261 0 Fix 0.0715254
+NatM_break_5_Fem_GP_1_BLK1repl_2012 0.229 0 Fix 0.0606779
+NatM_break_5_Fem_GP_1_BLK1repl_2013 0.22 0 Fix 0.0576271
+NatM_break_5_Fem_GP_1_BLK1repl_2014 0.194 0 Fix 0.0488135
+NatM_break_5_Fem_GP_1_BLK1repl_2015 0.193 0 Fix 0.0484746
+NatM_break_5_Fem_GP_1_BLK1repl_2016 0.198 0 Fix 0.0501695
+NatM_break_5_Fem_GP_1_BLK1repl_2017 0.18 0 Fix 0.0440678
+NatM_break_5_Fem_GP_1_BLK1repl_2018 0.177 0 Fix 0.0430508
+NatM_break_5_Fem_GP_1_BLK1repl_2019 0.168 0 Fix 0.04
+NatM_break_5_Fem_GP_1_BLK1repl_2020 0.169 0 Fix 0.040339
+NatM_break_5_Fem_GP_1_BLK1repl_2021 0.169 0 Fix 0.040339
+NatM_break_5_Fem_GP_1_BLK1repl_2022 0.169 0 Fix 0.040339
+NatM_break_5_Fem_GP_1_BLK1repl_2023 0.169 0 Fix 0.040339
+NatM_break_5_Fem_GP_1_BLK1repl_2024 0.169 0 Fix 0.040339
+NatM_break_6_Fem_GP_1_BLK1repl_1903 0.202 0 Fix 0.0515254
+NatM_break_6_Fem_GP_1_BLK1repl_1975 0.224 0 Fix 0.058983
+NatM_break_6_Fem_GP_1_BLK1repl_1976 0.21 0 Fix 0.0542373
+NatM_break_6_Fem_GP_1_BLK1repl_1977 0.222 0 Fix 0.0583051
+NatM_break_6_Fem_GP_1_BLK1repl_1978 0.285 0 Fix 0.079661
+NatM_break_6_Fem_GP_1_BLK1repl_1979 0.312 0 Fix 0.0888135
+NatM_break_6_Fem_GP_1_BLK1repl_1980 0.368 0 Fix 0.107797
+NatM_break_6_Fem_GP_1_BLK1repl_1981 0.296 0 Fix 0.0833898
+NatM_break_6_Fem_GP_1_BLK1repl_1982 0.287 0 Fix 0.080339
+NatM_break_6_Fem_GP_1_BLK1repl_1983 0.297 0 Fix 0.0837288
+NatM_break_6_Fem_GP_1_BLK1repl_1984 0.287 0 Fix 0.080339
+NatM_break_6_Fem_GP_1_BLK1repl_1985 0.231 0 Fix 0.0613559
+NatM_break_6_Fem_GP_1_BLK1repl_1986 0.226 0 Fix 0.059661
+NatM_break_6_Fem_GP_1_BLK1repl_1987 0.201 0 Fix 0.0511864
+NatM_break_6_Fem_GP_1_BLK1repl_1988 0.221 0 Fix 0.0579661
+NatM_break_6_Fem_GP_1_BLK1repl_1989 0.197 0 Fix 0.0498305
+NatM_break_6_Fem_GP_1_BLK1repl_1990 0.149 0 Fix 0.0335593
+NatM_break_6_Fem_GP_1_BLK1repl_1991 0.14 0 Fix 0.0305085
+NatM_break_6_Fem_GP_1_BLK1repl_1992 0.117 0 Fix 0.0227119
+NatM_break_6_Fem_GP_1_BLK1repl_1993 0.152 0 Fix 0.0345763
+NatM_break_6_Fem_GP_1_BLK1repl_1994 0.163 0 Fix 0.0383051
+NatM_break_6_Fem_GP_1_BLK1repl_1995 0.164 0 Fix 0.0386441
+NatM_break_6_Fem_GP_1_BLK1repl_1996 0.155 0 Fix 0.0355932
+NatM_break_6_Fem_GP_1_BLK1repl_1997 0.141 0 Fix 0.0308474
+NatM_break_6_Fem_GP_1_BLK1repl_1998 0.132 0 Fix 0.0277966
+NatM_break_6_Fem_GP_1_BLK1repl_1999 0.142 0 Fix 0.0311864
+NatM_break_6_Fem_GP_1_BLK1repl_2000 0.22 0 Fix 0.0576271
+NatM_break_6_Fem_GP_1_BLK1repl_2001 0.216 0 Fix 0.0562712
+NatM_break_6_Fem_GP_1_BLK1repl_2002 0.219 0 Fix 0.0572881
+NatM_break_6_Fem_GP_1_BLK1repl_2003 0.192 0 Fix 0.0481356
+NatM_break_6_Fem_GP_1_BLK1repl_2004 0.185 0 Fix 0.0457627
+NatM_break_6_Fem_GP_1_BLK1repl_2005 0.204 0 Fix 0.0522034
+NatM_break_6_Fem_GP_1_BLK1repl_2006 0.226 0 Fix 0.059661
+NatM_break_6_Fem_GP_1_BLK1repl_2007 0.228 0 Fix 0.060339
+NatM_break_6_Fem_GP_1_BLK1repl_2008 0.218 0 Fix 0.0569491
+NatM_break_6_Fem_GP_1_BLK1repl_2009 0.228 0 Fix 0.060339
+NatM_break_6_Fem_GP_1_BLK1repl_2010 0.251 0 Fix 0.0681356
+NatM_break_6_Fem_GP_1_BLK1repl_2011 0.237 0 Fix 0.0633898
+NatM_break_6_Fem_GP_1_BLK1repl_2012 0.203 0 Fix 0.0518644
+NatM_break_6_Fem_GP_1_BLK1repl_2013 0.195 0 Fix 0.0491525
+NatM_break_6_Fem_GP_1_BLK1repl_2014 0.201 0 Fix 0.0511864
+NatM_break_6_Fem_GP_1_BLK1repl_2015 0.177 0 Fix 0.0430508
+NatM_break_6_Fem_GP_1_BLK1repl_2016 0.185 0 Fix 0.0457627
+NatM_break_6_Fem_GP_1_BLK1repl_2017 0.173 0 Fix 0.0416949
+NatM_break_6_Fem_GP_1_BLK1repl_2018 0.155 0 Fix 0.0355932
+NatM_break_6_Fem_GP_1_BLK1repl_2019 0.167 0 Fix 0.039661
+NatM_break_6_Fem_GP_1_BLK1repl_2020 0.158 0 Fix 0.0366102
+NatM_break_6_Fem_GP_1_BLK1repl_2021 0.164 0 Fix 0.0386441
+NatM_break_6_Fem_GP_1_BLK1repl_2022 0.164 0 Fix 0.0386441
+NatM_break_6_Fem_GP_1_BLK1repl_2023 0.164 0 Fix 0.0386441
+NatM_break_6_Fem_GP_1_BLK1repl_2024 0.164 0 Fix 0.0386441
+NatM_break_7_Fem_GP_1_BLK1repl_1903 0.2 0 Fix 0.0508474
+NatM_break_7_Fem_GP_1_BLK1repl_1975 0.223 0 Fix 0.058644
+NatM_break_7_Fem_GP_1_BLK1repl_1976 0.209 0 Fix 0.0538983
+NatM_break_7_Fem_GP_1_BLK1repl_1977 0.22 0 Fix 0.0576271
+NatM_break_7_Fem_GP_1_BLK1repl_1978 0.259 0 Fix 0.0708474
+NatM_break_7_Fem_GP_1_BLK1repl_1979 0.303 0 Fix 0.0857627
+NatM_break_7_Fem_GP_1_BLK1repl_1980 0.316 0 Fix 0.0901695
+NatM_break_7_Fem_GP_1_BLK1repl_1981 0.298 0 Fix 0.0840678
+NatM_break_7_Fem_GP_1_BLK1repl_1982 0.268 0 Fix 0.0738983
+NatM_break_7_Fem_GP_1_BLK1repl_1983 0.266 0 Fix 0.0732203
+NatM_break_7_Fem_GP_1_BLK1repl_1984 0.257 0 Fix 0.0701695
+NatM_break_7_Fem_GP_1_BLK1repl_1985 0.224 0 Fix 0.058983
+NatM_break_7_Fem_GP_1_BLK1repl_1986 0.207 0 Fix 0.0532203
+NatM_break_7_Fem_GP_1_BLK1repl_1987 0.184 0 Fix 0.0454237
+NatM_break_7_Fem_GP_1_BLK1repl_1988 0.197 0 Fix 0.0498305
+NatM_break_7_Fem_GP_1_BLK1repl_1989 0.186 0 Fix 0.0461017
+NatM_break_7_Fem_GP_1_BLK1repl_1990 0.141 0 Fix 0.0308474
+NatM_break_7_Fem_GP_1_BLK1repl_1991 0.121 0 Fix 0.0240678
+NatM_break_7_Fem_GP_1_BLK1repl_1992 0.126 0 Fix 0.0257627
+NatM_break_7_Fem_GP_1_BLK1repl_1993 0.142 0 Fix 0.0311864
+NatM_break_7_Fem_GP_1_BLK1repl_1994 0.151 0 Fix 0.0342373
+NatM_break_7_Fem_GP_1_BLK1repl_1995 0.159 0 Fix 0.0369491
+NatM_break_7_Fem_GP_1_BLK1repl_1996 0.147 0 Fix 0.0328813
+NatM_break_7_Fem_GP_1_BLK1repl_1997 0.136 0 Fix 0.0291525
+NatM_break_7_Fem_GP_1_BLK1repl_1998 0.126 0 Fix 0.0257627
+NatM_break_7_Fem_GP_1_BLK1repl_1999 0.132 0 Fix 0.0277966
+NatM_break_7_Fem_GP_1_BLK1repl_2000 0.205 0 Fix 0.0525424
+NatM_break_7_Fem_GP_1_BLK1repl_2001 0.207 0 Fix 0.0532203
+NatM_break_7_Fem_GP_1_BLK1repl_2002 0.207 0 Fix 0.0532203
+NatM_break_7_Fem_GP_1_BLK1repl_2003 0.185 0 Fix 0.0457627
+NatM_break_7_Fem_GP_1_BLK1repl_2004 0.179 0 Fix 0.0437288
+NatM_break_7_Fem_GP_1_BLK1repl_2005 0.189 0 Fix 0.0471186
+NatM_break_7_Fem_GP_1_BLK1repl_2006 0.197 0 Fix 0.0498305
+NatM_break_7_Fem_GP_1_BLK1repl_2007 0.198 0 Fix 0.0501695
+NatM_break_7_Fem_GP_1_BLK1repl_2008 0.226 0 Fix 0.059661
+NatM_break_7_Fem_GP_1_BLK1repl_2009 0.211 0 Fix 0.0545763
+NatM_break_7_Fem_GP_1_BLK1repl_2010 0.232 0 Fix 0.0616949
+NatM_break_7_Fem_GP_1_BLK1repl_2011 0.231 0 Fix 0.0613559
+NatM_break_7_Fem_GP_1_BLK1repl_2012 0.194 0 Fix 0.0488135
+NatM_break_7_Fem_GP_1_BLK1repl_2013 0.181 0 Fix 0.0444068
+NatM_break_7_Fem_GP_1_BLK1repl_2014 0.181 0 Fix 0.0444068
+NatM_break_7_Fem_GP_1_BLK1repl_2015 0.176 0 Fix 0.0427118
+NatM_break_7_Fem_GP_1_BLK1repl_2016 0.175 0 Fix 0.0423729
+NatM_break_7_Fem_GP_1_BLK1repl_2017 0.163 0 Fix 0.0383051
+NatM_break_7_Fem_GP_1_BLK1repl_2018 0.153 0 Fix 0.0349152
+NatM_break_7_Fem_GP_1_BLK1repl_2019 0.152 0 Fix 0.0345763
+NatM_break_7_Fem_GP_1_BLK1repl_2020 0.159 0 Fix 0.0369491
+NatM_break_7_Fem_GP_1_BLK1repl_2021 0.158 0 Fix 0.0366102
+NatM_break_7_Fem_GP_1_BLK1repl_2022 0.158 0 Fix 0.0366102
+NatM_break_7_Fem_GP_1_BLK1repl_2023 0.158 0 Fix 0.0366102
+NatM_break_7_Fem_GP_1_BLK1repl_2024 0.158 0 Fix 0.0366102
+NatM_break_8_Fem_GP_1_BLK1repl_1903 0.185 0 Fix 0.0457627
+NatM_break_8_Fem_GP_1_BLK1repl_1975 0.208 0 Fix 0.0535593
+NatM_break_8_Fem_GP_1_BLK1repl_1976 0.196 0 Fix 0.0494915
+NatM_break_8_Fem_GP_1_BLK1repl_1977 0.205 0 Fix 0.0525424
+NatM_break_8_Fem_GP_1_BLK1repl_1978 0.243 0 Fix 0.0654237
+NatM_break_8_Fem_GP_1_BLK1repl_1979 0.267 0 Fix 0.0735593
+NatM_break_8_Fem_GP_1_BLK1repl_1980 0.29 0 Fix 0.0813559
+NatM_break_8_Fem_GP_1_BLK1repl_1981 0.261 0 Fix 0.0715254
+NatM_break_8_Fem_GP_1_BLK1repl_1982 0.265 0 Fix 0.0728813
+NatM_break_8_Fem_GP_1_BLK1repl_1983 0.249 0 Fix 0.0674576
+NatM_break_8_Fem_GP_1_BLK1repl_1984 0.231 0 Fix 0.0613559
+NatM_break_8_Fem_GP_1_BLK1repl_1985 0.211 0 Fix 0.0545763
+NatM_break_8_Fem_GP_1_BLK1repl_1986 0.193 0 Fix 0.0484746
+NatM_break_8_Fem_GP_1_BLK1repl_1987 0.173 0 Fix 0.0416949
+NatM_break_8_Fem_GP_1_BLK1repl_1988 0.178 0 Fix 0.0433898
+NatM_break_8_Fem_GP_1_BLK1repl_1989 0.167 0 Fix 0.039661
+NatM_break_8_Fem_GP_1_BLK1repl_1990 0.135 0 Fix 0.0288135
+NatM_break_8_Fem_GP_1_BLK1repl_1991 0.124 0 Fix 0.0250847
+NatM_break_8_Fem_GP_1_BLK1repl_1992 0.114 0 Fix 0.0216949
+NatM_break_8_Fem_GP_1_BLK1repl_1993 0.15 0 Fix 0.0338983
+NatM_break_8_Fem_GP_1_BLK1repl_1994 0.137 0 Fix 0.0294915
+NatM_break_8_Fem_GP_1_BLK1repl_1995 0.146 0 Fix 0.0325424
+NatM_break_8_Fem_GP_1_BLK1repl_1996 0.142 0 Fix 0.0311864
+NatM_break_8_Fem_GP_1_BLK1repl_1997 0.132 0 Fix 0.0277966
+NatM_break_8_Fem_GP_1_BLK1repl_1998 0.125 0 Fix 0.0254237
+NatM_break_8_Fem_GP_1_BLK1repl_1999 0.129 0 Fix 0.0267797
+NatM_break_8_Fem_GP_1_BLK1repl_2000 0.196 0 Fix 0.0494915
+NatM_break_8_Fem_GP_1_BLK1repl_2001 0.204 0 Fix 0.0522034
+NatM_break_8_Fem_GP_1_BLK1repl_2002 0.199 0 Fix 0.0505085
+NatM_break_8_Fem_GP_1_BLK1repl_2003 0.177 0 Fix 0.0430508
+NatM_break_8_Fem_GP_1_BLK1repl_2004 0.173 0 Fix 0.0416949
+NatM_break_8_Fem_GP_1_BLK1repl_2005 0.18 0 Fix 0.0440678
+NatM_break_8_Fem_GP_1_BLK1repl_2006 0.188 0 Fix 0.0467796
+NatM_break_8_Fem_GP_1_BLK1repl_2007 0.186 0 Fix 0.0461017
+NatM_break_8_Fem_GP_1_BLK1repl_2008 0.199 0 Fix 0.0505085
+NatM_break_8_Fem_GP_1_BLK1repl_2009 0.226 0 Fix 0.059661
+NatM_break_8_Fem_GP_1_BLK1repl_2010 0.217 0 Fix 0.0566102
+NatM_break_8_Fem_GP_1_BLK1repl_2011 0.212 0 Fix 0.0549152
+NatM_break_8_Fem_GP_1_BLK1repl_2012 0.183 0 Fix 0.0450847
+NatM_break_8_Fem_GP_1_BLK1repl_2013 0.175 0 Fix 0.0423729
+NatM_break_8_Fem_GP_1_BLK1repl_2014 0.174 0 Fix 0.0420339
+NatM_break_8_Fem_GP_1_BLK1repl_2015 0.166 0 Fix 0.039322
+NatM_break_8_Fem_GP_1_BLK1repl_2016 0.17 0 Fix 0.040678
+NatM_break_8_Fem_GP_1_BLK1repl_2017 0.154 0 Fix 0.0352542
+NatM_break_8_Fem_GP_1_BLK1repl_2018 0.15 0 Fix 0.0338983
+NatM_break_8_Fem_GP_1_BLK1repl_2019 0.148 0 Fix 0.0332203
+NatM_break_8_Fem_GP_1_BLK1repl_2020 0.146 0 Fix 0.0325424
+NatM_break_8_Fem_GP_1_BLK1repl_2021 0.155 0 Fix 0.0355932
+NatM_break_8_Fem_GP_1_BLK1repl_2022 0.155 0 Fix 0.0355932
+NatM_break_8_Fem_GP_1_BLK1repl_2023 0.155 0 Fix 0.0355932
+NatM_break_8_Fem_GP_1_BLK1repl_2024 0.155 0 Fix 0.0355932
+NatM_break_9_Fem_GP_1_BLK1repl_1903 0.155 0 Fix 0.0355932
+NatM_break_9_Fem_GP_1_BLK1repl_1975 0.172 0 Fix 0.0413559
+NatM_break_9_Fem_GP_1_BLK1repl_1976 0.164 0 Fix 0.0386441
+NatM_break_9_Fem_GP_1_BLK1repl_1977 0.171 0 Fix 0.0410169
+NatM_break_9_Fem_GP_1_BLK1repl_1978 0.212 0 Fix 0.0549152
+NatM_break_9_Fem_GP_1_BLK1repl_1979 0.216 0 Fix 0.0562712
+NatM_break_9_Fem_GP_1_BLK1repl_1980 0.253 0 Fix 0.0688135
+NatM_break_9_Fem_GP_1_BLK1repl_1981 0.222 0 Fix 0.0583051
+NatM_break_9_Fem_GP_1_BLK1repl_1982 0.211 0 Fix 0.0545763
+NatM_break_9_Fem_GP_1_BLK1repl_1983 0.219 0 Fix 0.0572881
+NatM_break_9_Fem_GP_1_BLK1repl_1984 0.205 0 Fix 0.0525424
+NatM_break_9_Fem_GP_1_BLK1repl_1985 0.188 0 Fix 0.0467796
+NatM_break_9_Fem_GP_1_BLK1repl_1986 0.168 0 Fix 0.04
+NatM_break_9_Fem_GP_1_BLK1repl_1987 0.154 0 Fix 0.0352542
+NatM_break_9_Fem_GP_1_BLK1repl_1988 0.156 0 Fix 0.0359322
+NatM_break_9_Fem_GP_1_BLK1repl_1989 0.147 0 Fix 0.0328813
+NatM_break_9_Fem_GP_1_BLK1repl_1990 0.127 0 Fix 0.0261017
+NatM_break_9_Fem_GP_1_BLK1repl_1991 0.115 0 Fix 0.0220339
+NatM_break_9_Fem_GP_1_BLK1repl_1992 0.111 0 Fix 0.020678
+NatM_break_9_Fem_GP_1_BLK1repl_1993 0.129 0 Fix 0.0267797
+NatM_break_9_Fem_GP_1_BLK1repl_1994 0.135 0 Fix 0.0288135
+NatM_break_9_Fem_GP_1_BLK1repl_1995 0.144 0 Fix 0.0318644
+NatM_break_9_Fem_GP_1_BLK1repl_1996 0.13 0 Fix 0.0271186
+NatM_break_9_Fem_GP_1_BLK1repl_1997 0.126 0 Fix 0.0257627
+NatM_break_9_Fem_GP_1_BLK1repl_1998 0.114 0 Fix 0.0216949
+NatM_break_9_Fem_GP_1_BLK1repl_1999 0.118 0 Fix 0.0230508
+NatM_break_9_Fem_GP_1_BLK1repl_2000 0.194 0 Fix 0.0488135
+NatM_break_9_Fem_GP_1_BLK1repl_2001 0.2 0 Fix 0.0508474
+NatM_break_9_Fem_GP_1_BLK1repl_2002 0.205 0 Fix 0.0525424
+NatM_break_9_Fem_GP_1_BLK1repl_2003 0.175 0 Fix 0.0423729
+NatM_break_9_Fem_GP_1_BLK1repl_2004 0.166 0 Fix 0.039322
+NatM_break_9_Fem_GP_1_BLK1repl_2005 0.171 0 Fix 0.0410169
+NatM_break_9_Fem_GP_1_BLK1repl_2006 0.179 0 Fix 0.0437288
+NatM_break_9_Fem_GP_1_BLK1repl_2007 0.171 0 Fix 0.0410169
+NatM_break_9_Fem_GP_1_BLK1repl_2008 0.188 0 Fix 0.0467796
+NatM_break_9_Fem_GP_1_BLK1repl_2009 0.202 0 Fix 0.0515254
+NatM_break_9_Fem_GP_1_BLK1repl_2010 0.214 0 Fix 0.0555932
+NatM_break_9_Fem_GP_1_BLK1repl_2011 0.213 0 Fix 0.0552542
+NatM_break_9_Fem_GP_1_BLK1repl_2012 0.173 0 Fix 0.0416949
+NatM_break_9_Fem_GP_1_BLK1repl_2013 0.168 0 Fix 0.04
+NatM_break_9_Fem_GP_1_BLK1repl_2014 0.168 0 Fix 0.04
+NatM_break_9_Fem_GP_1_BLK1repl_2015 0.162 0 Fix 0.0379661
+NatM_break_9_Fem_GP_1_BLK1repl_2016 0.163 0 Fix 0.0383051
+NatM_break_9_Fem_GP_1_BLK1repl_2017 0.15 0 Fix 0.0338983
+NatM_break_9_Fem_GP_1_BLK1repl_2018 0.143 0 Fix 0.0315254
+NatM_break_9_Fem_GP_1_BLK1repl_2019 0.144 0 Fix 0.0318644
+NatM_break_9_Fem_GP_1_BLK1repl_2020 0.145 0 Fix 0.0322034
+NatM_break_9_Fem_GP_1_BLK1repl_2021 0.149 0 Fix 0.0335593
+NatM_break_9_Fem_GP_1_BLK1repl_2022 0.149 0 Fix 0.0335593
+NatM_break_9_Fem_GP_1_BLK1repl_2023 0.149 0 Fix 0.0335593
+NatM_break_9_Fem_GP_1_BLK1repl_2024 0.149 0 Fix 0.0335593
+#_SPAWN_RECR
+SR_LN(R0) 17.212 0 Act 0.134666
+SR_BH_steep 0.756084 0 Act 0.728982
+SR_sigmaR 0.5 0 Fix 0.25
+SR_regime 0 0 Fix 0.5
+SR_autocorr 0.18 0 Fix 0.18
+Early_RecrDev_1966 -0.325418 0 Act 0.467458
+Early_RecrDev_1967 -0.357764 0 Act 0.464224
+Early_RecrDev_1968 -0.378161 0 Act 0.462184
+Early_RecrDev_1969 -0.283447 0 Act 0.471655
+Early_RecrDev_1970 0.226815 0 Act 0.522681
+Early_RecrDev_1971 -0.0535353 0 Act 0.494646
+Early_RecrDev_1972 0.256661 0 Act 0.525666
+Early_RecrDev_1973 0.287224 0 Act 0.528722
+Main_RecrDev_1974 0.148477 0 Act 0.514848
+Main_RecrDev_1975 0.640805 0 Act 0.56408
+Main_RecrDev_1976 0.234424 0 Act 0.523442
+Main_RecrDev_1977 0.561786 0 Act 0.556178
+Main_RecrDev_1978 0.43118 0 Act 0.543118
+Main_RecrDev_1979 1.01767 0 Act 0.601767
+Main_RecrDev_1980 1.34884 0 Act 0.634884
+Main_RecrDev_1981 1.05235 0 Act 0.605235
+Main_RecrDev_1982 0.6589 0 Act 0.56589
+Main_RecrDev_1983 0.866045 0 Act 0.586604
+Main_RecrDev_1984 0.557036 0 Act 0.555704
+Main_RecrDev_1985 -0.317748 0 Act 0.468225
+Main_RecrDev_1986 0.510669 0 Act 0.551067
+Main_RecrDev_1987 -0.583548 0 Act 0.441645
+Main_RecrDev_1988 -0.169578 0 Act 0.483042
+Main_RecrDev_1989 -0.0695489 0 Act 0.493045
+Main_RecrDev_1990 -0.483367 0 Act 0.451663
+Main_RecrDev_1991 -0.100025 0 Act 0.489997
+Main_RecrDev_1992 -0.180359 0 Act 0.481964
+Main_RecrDev_1993 -0.423353 0 Act 0.457665
+Main_RecrDev_1994 -0.114916 0 Act 0.488508
+Main_RecrDev_1995 -0.211048 0 Act 0.478895
+Main_RecrDev_1996 -0.77836 0 Act 0.422164
+Main_RecrDev_1997 -0.221377 0 Act 0.477862
+Main_RecrDev_1998 -0.922035 0 Act 0.407796
+Main_RecrDev_1999 0.200911 0 Act 0.520091
+Main_RecrDev_2000 -0.365138 0 Act 0.463486
+Main_RecrDev_2001 -0.230127 0 Act 0.476987
+Main_RecrDev_2002 0.544297 0 Act 0.55443
+Main_RecrDev_2003 -0.188283 0 Act 0.481172
+Main_RecrDev_2004 -0.60524 0 Act 0.439476
+Main_RecrDev_2005 0.0101219 0 Act 0.501012
+Main_RecrDev_2006 -0.249035 0 Act 0.475096
+Main_RecrDev_2007 0.499831 0 Act 0.549983
+Main_RecrDev_2008 0.0518016 0 Act 0.50518
+Main_RecrDev_2009 -0.195836 0 Act 0.480416
+Main_RecrDev_2010 -0.723201 0 Act 0.42768
+Main_RecrDev_2011 0.226146 0 Act 0.522615
+Main_RecrDev_2012 0.137662 0 Act 0.513766
+Main_RecrDev_2013 -0.295176 0 Act 0.470482
+Main_RecrDev_2014 0.930154 0 Act 0.593015
+Main_RecrDev_2015 -0.437223 0 Act 0.456278
+Main_RecrDev_2016 -0.338257 0 Act 0.466174
+Main_RecrDev_2017 -0.32896 0 Act 0.467104
+Main_RecrDev_2018 -0.819508 0 Act 0.418049
+Main_RecrDev_2019 -0.00422096 0 Act 0.499578
+Main_RecrDev_2020 -0.771302 0 Act 0.42287
+Main_RecrDev_2021 -0.90622 0 Act 0.409378
+Main_RecrDev_2022 0.403885 0 Act 0.540388
+Late_RecrDev_2023 0.0369482 0 Act 0.503695
+ForeRecr_2024 0.00665067 0 Act 0.500665
+ForeRecr_2025 0.00119712 0 Act 0.50012
+ForeRecr_2026 0.000215482 0 Act 0.500021
+#_Init_F
+InitF_seas_1_flt_1Fleet 0.009 0 Fix 0.008008
+#_F
+F_fleet_1_YR_1903_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1904_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1905_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1906_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1907_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1908_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1909_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1910_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1911_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1912_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1913_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1914_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1915_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1916_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1917_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1918_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1919_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1920_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1921_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1922_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1923_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1924_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1925_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1926_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1927_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1928_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1929_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1930_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1931_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1932_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1933_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1934_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1935_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1936_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1937_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1938_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1939_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1940_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1941_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1942_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1943_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1944_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1945_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1946_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1947_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1948_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1949_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1950_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1951_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1952_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1953_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1954_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1955_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1956_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1957_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1958_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1959_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1960_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1961_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1962_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1963_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1964_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1965_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1966_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1967_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1968_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1969_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1970_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1971_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1972_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1973_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1974_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1975_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1976_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1977_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1978_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1979_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1980_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1981_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1982_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1983_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1984_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1985_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1986_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1987_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1988_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1989_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1990_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1991_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1992_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1993_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1994_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1995_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1996_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1997_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1998_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_1999_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2000_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2001_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2002_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2003_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2004_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2005_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2006_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2007_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2008_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2009_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2010_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2011_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2012_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2013_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2014_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2015_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2016_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2017_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2018_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2019_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2020_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2021_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2022_s_1 0.05 0 Fix 0.0217391
+F_fleet_1_YR_2023_s_1 0.05 0 Fix 0.0217391
+#_Catchability
+LnQ_base_Acoustics(2) -5.37652 0 Fix 0.39247
+Q_extraSD_Acoustics(2) 0 0 Fix 0
+#_Selectivity
+AgeSel_P1_Fleet(1) -1000 0 Fix 0.00199005
+AgeSel_P2_Fleet(1) 1 0 Fix 0.52
+AgeSel_P3_Fleet(1) 0.809238 0 Act 0.414946
+AgeSel_P4_Fleet(1) 0.413194 0 Act 0.386657
+AgeSel_P5_Fleet(1) 0.0936304 0 Act 0.363831
+AgeSel_P6_Fleet(1) 0.500955 0 Act 0.392925
+AgeSel_P7_Fleet(1) 0 0 Fix 0.357143
+AgeSel_P8_Fleet(1) 0 0 Fix 0.357143
+AgeSel_P9_Fleet(1) 0 0 Fix 0.357143
+AgeSel_P1_Acoustics(2) -1000 0 Fix 0.00199005
+AgeSel_P2_Acoustics(2) 1 0 Fix 0.52
+AgeSel_P3_Acoustics(2) 0.410601 0 Act 0.386472
+AgeSel_P4_Acoustics(2) 0.485806 0 Act 0.391843
+AgeSel_P5_Acoustics(2) 0.140251 0 Act 0.367161
+AgeSel_P6_Acoustics(2) 0.29089 0 Act 0.377921
+AgeSel_P7_Acoustics(2) 0 0 Fix 0.357143
+AgeSel_P8_Acoustics(2) 0 0 Fix 0.357143
+AgeSel_P9_Acoustics(2) 0 0 Fix 0.357143
+ln(DM_theta)_Age_P1 4.7713 0 Act 0.97713
+ln(DM_theta)_Age_P2 3.93261 0 Act 0.893261
+#_Derived_Quantities
+#_Spawn_Bio
+SSB_Virgin 3.73755e+06 0
+SSB_Initial 3.55793e+06 0
+SSB_1903 3.55793e+06 0
+SSB_1904 3.55722e+06 0
+SSB_1905 3.55873e+06 0
+SSB_1906 3.55221e+06 0
+SSB_1907 3.53914e+06 0
+SSB_1908 3.51398e+06 0
+SSB_1909 3.48677e+06 0
+SSB_1910 3.46997e+06 0
+SSB_1911 3.46071e+06 0
+SSB_1912 3.45792e+06 0
+SSB_1913 3.45775e+06 0
+SSB_1914 3.4561e+06 0
+SSB_1915 3.45832e+06 0
+SSB_1916 3.46011e+06 0
+SSB_1917 3.45631e+06 0
+SSB_1918 3.44623e+06 0
+SSB_1919 3.4383e+06 0
+SSB_1920 3.43549e+06 0
+SSB_1921 3.43426e+06 0
+SSB_1922 3.43456e+06 0
+SSB_1923 3.43552e+06 0
+SSB_1924 3.43499e+06 0
+SSB_1925 3.43464e+06 0
+SSB_1926 3.43567e+06 0
+SSB_1927 3.4362e+06 0
+SSB_1928 3.43547e+06 0
+SSB_1929 3.43161e+06 0
+SSB_1930 3.42577e+06 0
+SSB_1931 3.42172e+06 0
+SSB_1932 3.41959e+06 0
+SSB_1933 3.41485e+06 0
+SSB_1934 3.40707e+06 0
+SSB_1935 3.39506e+06 0
+SSB_1936 3.3795e+06 0
+SSB_1937 3.36113e+06 0
+SSB_1938 3.34587e+06 0
+SSB_1939 3.3361e+06 0
+SSB_1940 3.33939e+06 0
+SSB_1941 3.34654e+06 0
+SSB_1942 3.34307e+06 0
+SSB_1943 3.32969e+06 0
+SSB_1944 3.31349e+06 0
+SSB_1945 3.30703e+06 0
+SSB_1946 3.30311e+06 0
+SSB_1947 3.31191e+06 0
+SSB_1948 3.32784e+06 0
+SSB_1949 3.33846e+06 0
+SSB_1950 3.33341e+06 0
+SSB_1951 3.32297e+06 0
+SSB_1952 3.32024e+06 0
+SSB_1953 3.31736e+06 0
+SSB_1954 3.29489e+06 0
+SSB_1955 3.25872e+06 0
+SSB_1956 3.16257e+06 0
+SSB_1957 3.06504e+06 0
+SSB_1958 2.99454e+06 0
+SSB_1959 2.93241e+06 0
+SSB_1960 2.87362e+06 0
+SSB_1961 2.8289e+06 0
+SSB_1962 2.78673e+06 0
+SSB_1963 2.74172e+06 0
+SSB_1964 2.68015e+06 0
+SSB_1965 2.63178e+06 0
+SSB_1966 2.58307e+06 0
+SSB_1967 2.50057e+06 0
+SSB_1968 2.31722e+06 0
+SSB_1969 2.06838e+06 0
+SSB_1970 1.86183e+06 0
+SSB_1971 1.67055e+06 0
+SSB_1972 1.5615e+06 0
+SSB_1973 1.49188e+06 0
+SSB_1974 1.40435e+06 0
+SSB_1975 1.38914e+06 0
+SSB_1976 1.27704e+06 0
+SSB_1977 1.43874e+06 0
+SSB_1978 1.54525e+06 0
+SSB_1979 1.56457e+06 0
+SSB_1980 1.42468e+06 0
+SSB_1981 1.33121e+06 0
+SSB_1982 1.40063e+06 0
+SSB_1983 1.4032e+06 0
+SSB_1984 1.22652e+06 0
+SSB_1985 1.17816e+06 0
+SSB_1986 1.03068e+06 0
+SSB_1987 1.00329e+06 0
+SSB_1988 1.06372e+06 0
+SSB_1989 961567 0
+SSB_1990 785758 0
+SSB_1991 784496 0
+SSB_1992 712796 0
+SSB_1993 735048 0
+SSB_1994 764587 0
+SSB_1995 642138 0
+SSB_1996 549752 0
+SSB_1997 516418 0
+SSB_1998 502108 0
+SSB_1999 437305 0
+SSB_2000 456128 0
+SSB_2001 428005 0
+SSB_2002 421001 0
+SSB_2003 452000 0
+SSB_2004 463212 0
+SSB_2005 517667 0
+SSB_2006 555128 0
+SSB_2007 577489 0
+SSB_2008 567740 0
+SSB_2009 668081 0
+SSB_2010 622027 0
+SSB_2011 581147 0
+SSB_2012 578492 0
+SSB_2013 659525 0
+SSB_2014 721053 0
+SSB_2015 659427 0
+SSB_2016 694596 0
+SSB_2017 740893 0
+SSB_2018 709896 0
+SSB_2019 622319 0
+SSB_2020 506117 0
+SSB_2021 465395 0
+SSB_2022 524594 0
+SSB_2023 602823 0
+SSB_2024 737508 0
+SSB_2025 871685 0
+SSB_2026 995050 0
+#_Recruitment
+Recr_Virgin 2.98588e+07 0
+Recr_Initial 2.98588e+07 0
+Recr_1903 2.97378e+07 0
+Recr_1904 2.97373e+07 0
+Recr_1905 2.97383e+07 0
+Recr_1906 2.97337e+07 0
+Recr_1907 2.97244e+07 0
+Recr_1908 2.97064e+07 0
+Recr_1909 2.96866e+07 0
+Recr_1910 2.96743e+07 0
+Recr_1911 2.96674e+07 0
+Recr_1912 2.96654e+07 0
+Recr_1913 2.96652e+07 0
+Recr_1914 2.9664e+07 0
+Recr_1915 2.96657e+07 0
+Recr_1916 2.9667e+07 0
+Recr_1917 2.96642e+07 0
+Recr_1918 2.96567e+07 0
+Recr_1919 2.96507e+07 0
+Recr_1920 2.96486e+07 0
+Recr_1921 2.96477e+07 0
+Recr_1922 2.96479e+07 0
+Recr_1923 2.96486e+07 0
+Recr_1924 2.96482e+07 0
+Recr_1925 2.9648e+07 0
+Recr_1926 2.96487e+07 0
+Recr_1927 2.96491e+07 0
+Recr_1928 2.96486e+07 0
+Recr_1929 2.96457e+07 0
+Recr_1930 2.96413e+07 0
+Recr_1931 2.96382e+07 0
+Recr_1932 2.96366e+07 0
+Recr_1933 2.9633e+07 0
+Recr_1934 2.96271e+07 0
+Recr_1935 2.96179e+07 0
+Recr_1936 2.96059e+07 0
+Recr_1937 2.95916e+07 0
+Recr_1938 2.95796e+07 0
+Recr_1939 2.95718e+07 0
+Recr_1940 2.95744e+07 0
+Recr_1941 2.95801e+07 0
+Recr_1942 2.95774e+07 0
+Recr_1943 2.95667e+07 0
+Recr_1944 2.95538e+07 0
+Recr_1945 2.95486e+07 0
+Recr_1946 2.95454e+07 0
+Recr_1947 2.95525e+07 0
+Recr_1948 2.95653e+07 0
+Recr_1949 2.95737e+07 0
+Recr_1950 2.95697e+07 0
+Recr_1951 2.95614e+07 0
+Recr_1952 2.95592e+07 0
+Recr_1953 2.95569e+07 0
+Recr_1954 2.95388e+07 0
+Recr_1955 2.95091e+07 0
+Recr_1956 2.94273e+07 0
+Recr_1957 2.93397e+07 0
+Recr_1958 2.92731e+07 0
+Recr_1959 2.9212e+07 0
+Recr_1960 2.9152e+07 0
+Recr_1961 2.91049e+07 0
+Recr_1962 2.90592e+07 0
+Recr_1963 2.90091e+07 0
+Recr_1964 2.89381e+07 0
+Recr_1965 2.88802e+07 0
+Recr_1966 2.01422e+07 0
+Recr_1967 1.91275e+07 0
+Recr_1968 1.82829e+07 0
+Recr_1969 1.94966e+07 0
+Recr_1970 3.14942e+07 0
+Recr_1971 2.30305e+07 0
+Recr_1972 3.08089e+07 0
+Recr_1973 3.15099e+07 0
+Recr_1974 2.71231e+07 0
+Recr_1975 4.42849e+07 0
+Recr_1976 2.901e+07 0
+Recr_1977 4.11914e+07 0
+Recr_1978 3.66165e+07 0
+Recr_1979 6.5967e+07 0
+Recr_1980 9.03283e+07 0
+Recr_1981 6.62819e+07 0
+Recr_1982 4.51643e+07 0
+Recr_1983 5.55787e+07 0
+Recr_1984 3.97207e+07 0
+Recr_1985 1.64194e+07 0
+Recr_1986 3.64597e+07 0
+Recr_1987 1.21269e+07 0
+Recr_1988 1.8606e+07 0
+Recr_1989 2.00613e+07 0
+Recr_1990 1.2549e+07 0
+Recr_1991 1.84029e+07 0
+Recr_1992 1.64933e+07 0
+Recr_1993 1.30599e+07 0
+Recr_1994 1.79928e+07 0
+Recr_1995 1.54589e+07 0
+Recr_1996 8.29476e+06 0
+Recr_1997 1.41368e+07 0
+Recr_1998 6.93869e+06 0
+Recr_1999 2.01493e+07 0
+Recr_2000 1.1646e+07 0
+Recr_2001 1.29729e+07 0
+Recr_2002 2.7941e+07 0
+Recr_2003 1.38461e+07 0
+Recr_2004 9.21908e+06 0
+Recr_2005 1.78359e+07 0
+Recr_2006 1.41339e+07 0
+Recr_2007 3.03235e+07 0
+Recr_2008 1.92535e+07 0
+Recr_2009 1.59046e+07 0
+Recr_2010 9.1629e+06 0
+Recr_2011 2.31159e+07 0
+Recr_2012 2.11234e+07 0
+Recr_2013 1.43394e+07 0
+Recr_2014 5.02536e+07 0
+Recr_2015 1.24399e+07 0
+Recr_2016 1.39689e+07 0
+Recr_2017 1.43877e+07 0
+Recr_2018 8.69301e+06 0
+Recr_2019 1.88084e+07 0
+Recr_2020 8.09284e+06 0
+Recr_2021 6.83626e+06 0
+Recr_2022 2.65787e+07 0
+Recr_2023 2.18282e+07 0
+Recr_2024 2.26329e+07 0
+Recr_2025 2.36291e+07 0
+Recr_2026 2.4434e+07 0
+#_SPR Basis=  (1-SPR)/(1-SPR_at_B30%)
+SPRratio_1903 0.0760646 0
+SPRratio_1904 0.0676868 0
+SPRratio_1905 0.0882107 0
+SPRratio_1906 0.108273 0
+SPRratio_1907 0.1435 0
+SPRratio_1908 0.15724 0
+SPRratio_1909 0.140158 0
+SPRratio_1910 0.127125 0
+SPRratio_1911 0.113555 0
+SPRratio_1912 0.107805 0
+SPRratio_1913 0.11202 0
+SPRratio_1914 0.101549 0
+SPRratio_1915 0.101872 0
+SPRratio_1916 0.116689 0
+SPRratio_1917 0.135004 0
+SPRratio_1918 0.132671 0
+SPRratio_1919 0.121709 0
+SPRratio_1920 0.118703 0
+SPRratio_1921 0.115223 0
+SPRratio_1922 0.113366 0
+SPRratio_1923 0.117079 0
+SPRratio_1924 0.116617 0
+SPRratio_1925 0.112884 0
+SPRratio_1926 0.113926 0
+SPRratio_1927 0.11725 0
+SPRratio_1928 0.12609 0
+SPRratio_1929 0.132807 0
+SPRratio_1930 0.13005 0
+SPRratio_1931 0.126374 0
+SPRratio_1932 0.134495 0
+SPRratio_1933 0.144453 0
+SPRratio_1934 0.15851 0
+SPRratio_1935 0.172005 0
+SPRratio_1936 0.184875 0
+SPRratio_1937 0.18366 0
+SPRratio_1938 0.175311 0
+SPRratio_1939 0.144257 0
+SPRratio_1940 0.132944 0
+SPRratio_1941 0.159518 0
+SPRratio_1942 0.186424 0
+SPRratio_1943 0.197942 0
+SPRratio_1944 0.178421 0
+SPRratio_1945 0.17462 0
+SPRratio_1946 0.141927 0
+SPRratio_1947 0.119022 0
+SPRratio_1948 0.128173 0
+SPRratio_1949 0.166793 0
+SPRratio_1950 0.182 0
+SPRratio_1951 0.165044 0
+SPRratio_1952 0.166718 0
+SPRratio_1953 0.218589 0
+SPRratio_1954 0.259307 0
+SPRratio_1955 0.396974 0
+SPRratio_1956 0.429353 0
+SPRratio_1957 0.41064 0
+SPRratio_1958 0.419371 0
+SPRratio_1959 0.435607 0
+SPRratio_1960 0.428736 0
+SPRratio_1961 0.439673 0
+SPRratio_1962 0.460265 0
+SPRratio_1963 0.507686 0
+SPRratio_1964 0.503885 0
+SPRratio_1965 0.521879 0
+SPRratio_1966 0.571493 0
+SPRratio_1967 0.665064 0
+SPRratio_1968 0.744359 0
+SPRratio_1969 0.752896 0
+SPRratio_1970 0.80481 0
+SPRratio_1971 0.861158 0
+SPRratio_1972 0.880902 0
+SPRratio_1973 0.974118 0
+SPRratio_1974 1.02901 0
+SPRratio_1975 0.973838 0
+SPRratio_1976 1.00282 0
+SPRratio_1977 0.950517 0
+SPRratio_1978 0.768863 0
+SPRratio_1979 0.723876 0
+SPRratio_1980 0.689664 0
+SPRratio_1981 0.784949 0
+SPRratio_1982 0.808328 0
+SPRratio_1983 0.865753 0
+SPRratio_1984 0.937127 0
+SPRratio_1985 1.00853 0
+SPRratio_1986 1.07652 0
+SPRratio_1987 1.10753 0
+SPRratio_1988 1.0625 0
+SPRratio_1989 1.0831 0
+SPRratio_1990 1.2031 0
+SPRratio_1991 1.20616 0
+SPRratio_1992 1.25528 0
+SPRratio_1993 1.21872 0
+SPRratio_1994 1.18243 0
+SPRratio_1995 1.1771 0
+SPRratio_1996 1.22581 0
+SPRratio_1997 1.24158 0
+SPRratio_1998 1.29373 0
+SPRratio_1999 1.31476 0
+SPRratio_2000 1.09079 0
+SPRratio_2001 1.08268 0
+SPRratio_2002 1.03465 0
+SPRratio_2003 1.04709 0
+SPRratio_2004 1.0333 0
+SPRratio_2005 0.99171 0
+SPRratio_2006 0.956123 0
+SPRratio_2007 0.976153 0
+SPRratio_2008 0.922967 0
+SPRratio_2009 0.881402 0
+SPRratio_2010 0.882372 0
+SPRratio_2011 0.863432 0
+SPRratio_2012 0.891351 0
+SPRratio_2013 0.875707 0
+SPRratio_2014 0.942024 0
+SPRratio_2015 1.07532 0
+SPRratio_2016 1.12807 0
+SPRratio_2017 1.14616 0
+SPRratio_2018 1.20867 0
+SPRratio_2019 1.1787 0
+SPRratio_2020 1.18547 0
+SPRratio_2021 1.12792 0
+SPRratio_2022 0.965266 0
+SPRratio_2023 0.912769 0
+SPRratio_2024 0.98971 0
+SPRratio_2025 0.98971 0
+SPRratio_2026 0.98971 0
+#_F Basis= _abs_F;_with_F=Z-M;_for_ages_unweighted_3_6
+F_1903 0.00724445 0
+F_1904 0.00640585 0
+F_1905 0.00847931 0
+F_1906 0.01057 0
+F_1907 0.0144024 0
+F_1908 0.0159561 0
+F_1909 0.0140296 0
+F_1910 0.0125946 0
+F_1911 0.0111312 0
+F_1912 0.0105204 0
+F_1913 0.0109677 0
+F_1914 0.00986207 0
+F_1915 0.00989589 0
+F_1916 0.0114665 0
+F_1917 0.0134585 0
+F_1918 0.0132016 0
+F_1919 0.0120068 0
+F_1920 0.0116827 0
+F_1921 0.0113094 0
+F_1922 0.0111111 0
+F_1923 0.0115083 0
+F_1924 0.0114587 0
+F_1925 0.0110596 0
+F_1926 0.0111708 0
+F_1927 0.0115266 0
+F_1928 0.0124818 0
+F_1929 0.0132166 0
+F_1930 0.012914 0
+F_1931 0.0125128 0
+F_1932 0.0134024 0
+F_1933 0.014509 0
+F_1934 0.0161015 0
+F_1935 0.0176644 0
+F_1936 0.0191872 0
+F_1937 0.019042 0
+F_1938 0.0180524 0
+F_1939 0.0144872 0
+F_1940 0.0132317 0
+F_1941 0.016217 0
+F_1942 0.0193726 0
+F_1943 0.0207664 0
+F_1944 0.0184195 0
+F_1945 0.0179711 0
+F_1946 0.0142267 0
+F_1947 0.011717 0
+F_1948 0.0127089 0
+F_1949 0.0170567 0
+F_1950 0.0188441 0
+F_1951 0.0168539 0
+F_1952 0.017048 0
+F_1953 0.0233328 0
+F_1954 0.0286645 0
+F_1955 0.0498551 0
+F_1956 0.0556956 0
+F_1957 0.0522746 0
+F_1958 0.0538548 0
+F_1959 0.0568677 0
+F_1960 0.0555807 0
+F_1961 0.0576377 0
+F_1962 0.061637 0
+F_1963 0.0715271 0
+F_1964 0.070697 0
+F_1965 0.0746876 0
+F_1966 0.0865518 0
+F_1967 0.113054 0
+F_1968 0.141011 0
+F_1969 0.144397 0
+F_1970 0.166871 0
+F_1971 0.195609 0
+F_1972 0.206969 0
+F_1973 0.272495 0
+F_1974 0.323428 0
+F_1975 0.319275 0
+F_1976 0.306477 0
+F_1977 0.268506 0
+F_1978 0.241411 0
+F_1979 0.238938 0
+F_1980 0.254252 0
+F_1981 0.266758 0
+F_1982 0.267742 0
+F_1983 0.303013 0
+F_1984 0.320177 0
+F_1985 0.329023 0
+F_1986 0.335555 0
+F_1987 0.356885 0
+F_1988 0.382094 0
+F_1989 0.420017 0
+F_1990 0.42601 0
+F_1991 0.39766 0
+F_1992 0.380731 0
+F_1993 0.413353 0
+F_1994 0.40187 0
+F_1995 0.417819 0
+F_1996 0.419664 0
+F_1997 0.448525 0
+F_1998 0.516682 0
+F_1999 0.528118 0
+F_2000 0.525098 0
+F_2001 0.489008 0
+F_2002 0.424702 0
+F_2003 0.334451 0
+F_2004 0.27 0
+F_2005 0.249719 0
+F_2006 0.261431 0
+F_2007 0.255039 0
+F_2008 0.272498 0
+F_2009 0.292425 0
+F_2010 0.29559 0
+F_2011 0.281666 0
+F_2012 0.209857 0
+F_2013 0.206168 0
+F_2014 0.251327 0
+F_2015 0.332556 0
+F_2016 0.406939 0
+F_2017 0.407136 0
+F_2018 0.480632 0
+F_2019 0.466179 0
+F_2020 0.449391 0
+F_2021 0.38632 0
+F_2022 0.234645 0
+F_2023 0.216924 0
+F_2024 0.257288 0
+F_2025 0.257288 0
+F_2026 0.257288 0
+#_Depletion Basis=  100%*B_MSY
+Bratio_1903 2.82636 0
+Bratio_1904 2.8258 0
+Bratio_1905 2.827 0
+Bratio_1906 2.82182 0
+Bratio_1907 2.81144 0
+Bratio_1908 2.79145 0
+Bratio_1909 2.76983 0
+Bratio_1910 2.75649 0
+Bratio_1911 2.74913 0
+Bratio_1912 2.74692 0
+Bratio_1913 2.74679 0
+Bratio_1914 2.74547 0
+Bratio_1915 2.74724 0
+Bratio_1916 2.74866 0
+Bratio_1917 2.74564 0
+Bratio_1918 2.73763 0
+Bratio_1919 2.73133 0
+Bratio_1920 2.7291 0
+Bratio_1921 2.72813 0
+Bratio_1922 2.72836 0
+Bratio_1923 2.72912 0
+Bratio_1924 2.7287 0
+Bratio_1925 2.72843 0
+Bratio_1926 2.72925 0
+Bratio_1927 2.72967 0
+Bratio_1928 2.72908 0
+Bratio_1929 2.72602 0
+Bratio_1930 2.72138 0
+Bratio_1931 2.71816 0
+Bratio_1932 2.71647 0
+Bratio_1933 2.7127 0
+Bratio_1934 2.70653 0
+Bratio_1935 2.69698 0
+Bratio_1936 2.68462 0
+Bratio_1937 2.67003 0
+Bratio_1938 2.65791 0
+Bratio_1939 2.65014 0
+Bratio_1940 2.65276 0
+Bratio_1941 2.65844 0
+Bratio_1942 2.65568 0
+Bratio_1943 2.64505 0
+Bratio_1944 2.63218 0
+Bratio_1945 2.62705 0
+Bratio_1946 2.62394 0
+Bratio_1947 2.63093 0
+Bratio_1948 2.64358 0
+Bratio_1949 2.65202 0
+Bratio_1950 2.64801 0
+Bratio_1951 2.63972 0
+Bratio_1952 2.63755 0
+Bratio_1953 2.63526 0
+Bratio_1954 2.61741 0
+Bratio_1955 2.58867 0
+Bratio_1956 2.5123 0
+Bratio_1957 2.43482 0
+Bratio_1958 2.37882 0
+Bratio_1959 2.32946 0
+Bratio_1960 2.28276 0
+Bratio_1961 2.24723 0
+Bratio_1962 2.21373 0
+Bratio_1963 2.17798 0
+Bratio_1964 2.12907 0
+Bratio_1965 2.09065 0
+Bratio_1966 2.05195 0
+Bratio_1967 1.98641 0
+Bratio_1968 1.84076 0
+Bratio_1969 1.64309 0
+Bratio_1970 1.47901 0
+Bratio_1971 1.32706 0
+Bratio_1972 1.24043 0
+Bratio_1973 1.18513 0
+Bratio_1974 1.11559 0
+Bratio_1975 1.10351 0
+Bratio_1976 1.01446 0
+Bratio_1977 1.14291 0
+Bratio_1978 1.22752 0
+Bratio_1979 1.24287 0
+Bratio_1980 1.13174 0
+Bratio_1981 1.0575 0
+Bratio_1982 1.11264 0
+Bratio_1983 1.11468 0
+Bratio_1984 0.974329 0
+Bratio_1985 0.935908 0
+Bratio_1986 0.818756 0
+Bratio_1987 0.797 0
+Bratio_1988 0.845004 0
+Bratio_1989 0.763854 0
+Bratio_1990 0.624193 0
+Bratio_1991 0.623191 0
+Bratio_1992 0.566234 0
+Bratio_1993 0.583911 0
+Bratio_1994 0.607376 0
+Bratio_1995 0.510105 0
+Bratio_1996 0.436714 0
+Bratio_1997 0.410234 0
+Bratio_1998 0.398866 0
+Bratio_1999 0.347388 0
+Bratio_2000 0.362341 0
+Bratio_2001 0.340001 0
+Bratio_2002 0.334437 0
+Bratio_2003 0.359062 0
+Bratio_2004 0.367969 0
+Bratio_2005 0.411227 0
+Bratio_2006 0.440985 0
+Bratio_2007 0.458748 0
+Bratio_2008 0.451004 0
+Bratio_2009 0.530713 0
+Bratio_2010 0.494129 0
+Bratio_2011 0.461654 0
+Bratio_2012 0.459545 0
+Bratio_2013 0.523917 0
+Bratio_2014 0.572793 0
+Bratio_2015 0.523839 0
+Bratio_2016 0.551776 0
+Bratio_2017 0.588554 0
+Bratio_2018 0.563931 0
+Bratio_2019 0.494361 0
+Bratio_2020 0.402051 0
+Bratio_2021 0.369703 0
+Bratio_2022 0.416729 0
+Bratio_2023 0.478873 0
+Bratio_2024 0.585865 0
+Bratio_2025 0.692453 0
+Bratio_2026 0.790452 0
+#_Mgmt_Quantity
+SSB_unfished 4.19612e+06 0
+Totbio_unfished 4.71957e+06 0
+SmryBio_unfished 4.71957e+06 0
+Recr_unfished 2.98588e+07 0
+SSB_Btgt 1.25884e+06 0
+SPR_Btgt 0.356456 0
+annF_Btgt 0.257288 0
+Dead_Catch_Btgt 249828 0
+SSB_SPR 1.45758e+06 0
+annF_SPR 0.209281 0
+Dead_Catch_SPR 246575 0
+SSB_MSY 1.25884e+06 0
+SPR_MSY 0.356456 0
+annF_MSY 0.257288 0
+Dead_Catch_MSY 249828 0
+Ret_Catch_MSY 249828 0
+B_MSY/SSB_unfished 0.3 0
+ForeCatch_2024 136884 0
+ForeCatch_2025 158346 0
+ForeCatch_2026 177138 0
+OFLCatch_2024 136884 0
+OFLCatch_2025 158346 0
+OFLCatch_2026 177138 0
+#_Extra_stdev
+ln(SPB)_1903 15.0847 0
+ln(SPB)_1963 14.8241 0
+ln(SPB)_2023 13.3094 0
+SmryBio_Virgin 4.62774e+06 0.0
+SmryBio_Initial 4.44772e+06 0.0
+SmryBio_1903 4.44699e+06 0.0
+SmryBio_1904 4.44422e+06 0.0
+SmryBio_1905 4.44505e+06 0.0
+SmryBio_1906 4.43832e+06 0.0
+SmryBio_1907 4.425e+06 0.0
+SmryBio_1908 4.39934e+06 0.0
+SmryBio_1909 4.37155e+06 0.0
+SmryBio_1910 4.35431e+06 0.0
+SmryBio_1911 4.34475e+06 0.0
+SmryBio_1912 4.34183e+06 0.0
+SmryBio_1913 4.34161e+06 0.0
+SmryBio_1914 4.33991e+06 0.0
+SmryBio_1915 4.34217e+06 0.0
+SmryBio_1916 4.34399e+06 0.0
+SmryBio_1917 4.34013e+06 0.0
+SmryBio_1918 4.32986e+06 0.0
+SmryBio_1919 4.32175e+06 0.0
+SmryBio_1920 4.31884e+06 0.0
+SmryBio_1921 4.31755e+06 0.0
+SmryBio_1922 4.31783e+06 0.0
+SmryBio_1923 4.31881e+06 0.0
+SmryBio_1924 4.31827e+06 0.0
+SmryBio_1925 4.31792e+06 0.0
+SmryBio_1926 4.31897e+06 0.0
+SmryBio_1927 4.31951e+06 0.0
+SmryBio_1928 4.31876e+06 0.0
+SmryBio_1929 4.31484e+06 0.0
+SmryBio_1930 4.30888e+06 0.0
+SmryBio_1931 4.30472e+06 0.0
+SmryBio_1932 4.30253e+06 0.0
+SmryBio_1933 4.29767e+06 0.0
+SmryBio_1934 4.28973e+06 0.0
+SmryBio_1935 4.27745e+06 0.0
+SmryBio_1936 4.26154e+06 0.0
+SmryBio_1937 4.24274e+06 0.0
+SmryBio_1938 4.22708e+06 0.0
+SmryBio_1939 4.21701e+06 0.0
+SmryBio_1940 4.22028e+06 0.0
+SmryBio_1941 4.22753e+06 0.0
+SmryBio_1942 4.22401e+06 0.0
+SmryBio_1943 4.21039e+06 0.0
+SmryBio_1944 4.19384e+06 0.0
+SmryBio_1945 4.18716e+06 0.0
+SmryBio_1946 4.18308e+06 0.0
+SmryBio_1947 4.19202e+06 0.0
+SmryBio_1948 4.20827e+06 0.0
+SmryBio_1949 4.21916e+06 0.0
+SmryBio_1950 4.21409e+06 0.0
+SmryBio_1951 4.20349e+06 0.0
+SmryBio_1952 4.20067e+06 0.0
+SmryBio_1953 4.19769e+06 0.0
+SmryBio_1954 4.17474e+06 0.0
+SmryBio_1955 4.13778e+06 0.0
+SmryBio_1956 4.03948e+06 0.0
+SmryBio_1957 3.93944e+06 0.0
+SmryBio_1958 3.86667e+06 0.0
+SmryBio_1959 3.8024e+06 0.0
+SmryBio_1960 3.7416e+06 0.0
+SmryBio_1961 3.6952e+06 0.0
+SmryBio_1962 3.65146e+06 0.0
+SmryBio_1963 3.60485e+06 0.0
+SmryBio_1964 3.54121e+06 0.0
+SmryBio_1965 3.49094e+06 0.0
+SmryBio_1966 3.38818e+06 0.0
+SmryBio_1967 3.15002e+06 0.0
+SmryBio_1968 2.89244e+06 0.0
+SmryBio_1969 2.62306e+06 0.0
+SmryBio_1970 2.50279e+06 0.0
+SmryBio_1971 2.47035e+06 0.0
+SmryBio_1972 2.33221e+06 0.0
+SmryBio_1973 2.359e+06 0.0
+SmryBio_1974 2.29291e+06 0.0
+SmryBio_1975 2.31195e+06 0.0
+SmryBio_1976 2.24612e+06 0.0
+SmryBio_1977 2.46021e+06 0.0
+SmryBio_1978 2.6039e+06 0.0
+SmryBio_1979 2.57037e+06 0.0
+SmryBio_1980 2.7268e+06 0.0
+SmryBio_1981 2.94459e+06 0.0
+SmryBio_1982 2.63502e+06 0.0
+SmryBio_1983 2.31949e+06 0.0
+SmryBio_1984 2.05461e+06 0.0
+SmryBio_1985 1.69435e+06 0.0
+SmryBio_1986 1.54471e+06 0.0
+SmryBio_1987 1.45831e+06 0.0
+SmryBio_1988 1.37586e+06 0.0
+SmryBio_1989 1.31317e+06 0.0
+SmryBio_1990 1.12052e+06 0.0
+SmryBio_1991 1.09579e+06 0.0
+SmryBio_1992 1.05666e+06 0.0
+SmryBio_1993 1.04961e+06 0.0
+SmryBio_1994 1.06108e+06 0.0
+SmryBio_1995 908608 0.0
+SmryBio_1996 781683 0.0
+SmryBio_1997 728727 0.0
+SmryBio_1998 678463 0.0
+SmryBio_1999 673623 0.0
+SmryBio_2000 742401 0.0
+SmryBio_2001 689800 0.0
+SmryBio_2002 771140 0.0
+SmryBio_2003 793206 0.0
+SmryBio_2004 707977 0.0
+SmryBio_2005 755773 0.0
+SmryBio_2006 832396 0.0
+SmryBio_2007 948657 0.0
+SmryBio_2008 1.02442e+06 0.0
+SmryBio_2009 965705 0.0
+SmryBio_2010 877961 0.0
+SmryBio_2011 860496 0.0
+SmryBio_2012 977802 0.0
+SmryBio_2013 961299 0.0
+SmryBio_2014 1.17188e+06 0.0
+SmryBio_2015 1.0559e+06 0.0
+SmryBio_2016 945340 0.0
+SmryBio_2017 973323 0.0
+SmryBio_2018 911721 0.0
+SmryBio_2019 832589 0.0
+SmryBio_2020 754139 0.0
+SmryBio_2021 617077 0.0
+SmryBio_2022 793972 0.0
+SmryBio_2023 974113 0.0
+SmryBio_2024 1.25825e+06 0.0
+SmryBio_2025 1.29122e+06 0.0
+SmryBio_2026 1.43009e+06 0.0
+#_survey_stdev 0
+#_Biomass
+TotBio_Virgin 4.62774e+06 0.0
+TotBio_Initial 4.44772e+06 0.0
+TotBio_1903 4.44699e+06 0.0
+TotBio_1904 4.44422e+06 0.0
+TotBio_1905 4.44505e+06 0.0
+TotBio_1906 4.43832e+06 0.0
+TotBio_1907 4.425e+06 0.0
+TotBio_1908 4.39934e+06 0.0
+TotBio_1909 4.37155e+06 0.0
+TotBio_1910 4.35431e+06 0.0
+TotBio_1911 4.34475e+06 0.0
+TotBio_1912 4.34183e+06 0.0
+TotBio_1913 4.34161e+06 0.0
+TotBio_1914 4.33991e+06 0.0
+TotBio_1915 4.34217e+06 0.0
+TotBio_1916 4.34399e+06 0.0
+TotBio_1917 4.34013e+06 0.0
+TotBio_1918 4.32986e+06 0.0
+TotBio_1919 4.32175e+06 0.0
+TotBio_1920 4.31884e+06 0.0
+TotBio_1921 4.31755e+06 0.0
+TotBio_1922 4.31783e+06 0.0
+TotBio_1923 4.31881e+06 0.0
+TotBio_1924 4.31827e+06 0.0
+TotBio_1925 4.31792e+06 0.0
+TotBio_1926 4.31897e+06 0.0
+TotBio_1927 4.31951e+06 0.0
+TotBio_1928 4.31876e+06 0.0
+TotBio_1929 4.31484e+06 0.0
+TotBio_1930 4.30888e+06 0.0
+TotBio_1931 4.30472e+06 0.0
+TotBio_1932 4.30253e+06 0.0
+TotBio_1933 4.29767e+06 0.0
+TotBio_1934 4.28973e+06 0.0
+TotBio_1935 4.27745e+06 0.0
+TotBio_1936 4.26154e+06 0.0
+TotBio_1937 4.24274e+06 0.0
+TotBio_1938 4.22708e+06 0.0
+TotBio_1939 4.21701e+06 0.0
+TotBio_1940 4.22028e+06 0.0
+TotBio_1941 4.22753e+06 0.0
+TotBio_1942 4.22401e+06 0.0
+TotBio_1943 4.21039e+06 0.0
+TotBio_1944 4.19384e+06 0.0
+TotBio_1945 4.18716e+06 0.0
+TotBio_1946 4.18308e+06 0.0
+TotBio_1947 4.19202e+06 0.0
+TotBio_1948 4.20827e+06 0.0
+TotBio_1949 4.21916e+06 0.0
+TotBio_1950 4.21409e+06 0.0
+TotBio_1951 4.20349e+06 0.0
+TotBio_1952 4.20067e+06 0.0
+TotBio_1953 4.19769e+06 0.0
+TotBio_1954 4.17474e+06 0.0
+TotBio_1955 4.13778e+06 0.0
+TotBio_1956 4.03948e+06 0.0
+TotBio_1957 3.93944e+06 0.0
+TotBio_1958 3.86667e+06 0.0
+TotBio_1959 3.8024e+06 0.0
+TotBio_1960 3.7416e+06 0.0
+TotBio_1961 3.6952e+06 0.0
+TotBio_1962 3.65146e+06 0.0
+TotBio_1963 3.60485e+06 0.0
+TotBio_1964 3.54121e+06 0.0
+TotBio_1965 3.49094e+06 0.0
+TotBio_1966 3.38818e+06 0.0
+TotBio_1967 3.15002e+06 0.0
+TotBio_1968 2.89244e+06 0.0
+TotBio_1969 2.62306e+06 0.0
+TotBio_1970 2.50279e+06 0.0
+TotBio_1971 2.47035e+06 0.0
+TotBio_1972 2.33221e+06 0.0
+TotBio_1973 2.359e+06 0.0
+TotBio_1974 2.29291e+06 0.0
+TotBio_1975 2.31195e+06 0.0
+TotBio_1976 2.24612e+06 0.0
+TotBio_1977 2.46021e+06 0.0
+TotBio_1978 2.6039e+06 0.0
+TotBio_1979 2.57037e+06 0.0
+TotBio_1980 2.7268e+06 0.0
+TotBio_1981 2.94459e+06 0.0
+TotBio_1982 2.63502e+06 0.0
+TotBio_1983 2.31949e+06 0.0
+TotBio_1984 2.05461e+06 0.0
+TotBio_1985 1.69435e+06 0.0
+TotBio_1986 1.54471e+06 0.0
+TotBio_1987 1.45831e+06 0.0
+TotBio_1988 1.37586e+06 0.0
+TotBio_1989 1.31317e+06 0.0
+TotBio_1990 1.12052e+06 0.0
+TotBio_1991 1.09579e+06 0.0
+TotBio_1992 1.05666e+06 0.0
+TotBio_1993 1.04961e+06 0.0
+TotBio_1994 1.06108e+06 0.0
+TotBio_1995 908608 0.0
+TotBio_1996 781683 0.0
+TotBio_1997 728727 0.0
+TotBio_1998 678463 0.0
+TotBio_1999 673623 0.0
+TotBio_2000 742401 0.0
+TotBio_2001 689800 0.0
+TotBio_2002 771140 0.0
+TotBio_2003 793206 0.0
+TotBio_2004 707977 0.0
+TotBio_2005 755773 0.0
+TotBio_2006 832396 0.0
+TotBio_2007 948657 0.0
+TotBio_2008 1.02442e+06 0.0
+TotBio_2009 965705 0.0
+TotBio_2010 877961 0.0
+TotBio_2011 860496 0.0
+TotBio_2012 977802 0.0
+TotBio_2013 961299 0.0
+TotBio_2014 1.17188e+06 0.0
+TotBio_2015 1.0559e+06 0.0
+TotBio_2016 945340 0.0
+TotBio_2017 973323 0.0
+TotBio_2018 911721 0.0
+TotBio_2019 832589 0.0
+TotBio_2020 754139 0.0
+TotBio_2021 617077 0.0
+TotBio_2022 793972 0.0
+TotBio_2023 974113 0.0
+TotBio_2024 1.14472e+06 0.0
+TotBio_2025 1.29122e+06 0.0
+TotBio_2026 1.43009e+06 0.0
+TotCatch_Virgin 0 0.0
+TotCatch_Initial 26345.9 0.0
+TotCatch_1903 26861.2 0.0
+TotCatch_1904 23756.9 0.0
+TotCatch_1905 31428.2 0.0
+TotCatch_1906 39063.7 0.0
+TotCatch_1907 52915.6 0.0
+TotCatch_1908 58128.1 0.0
+TotCatch_1909 50734.6 0.0
+TotCatch_1910 45335.9 0.0
+TotCatch_1911 39977.9 0.0
+TotCatch_1912 37759 0.0
+TotCatch_1913 39350.4 0.0
+TotCatch_1914 35386.8 0.0
+TotCatch_1915 35531.2 0.0
+TotCatch_1916 41157.7 0.0
+TotCatch_1917 48200.2 0.0
+TotCatch_1918 47140.6 0.0
+TotCatch_1919 42794.1 0.0
+TotCatch_1920 41606.3 0.0
+TotCatch_1921 40267.3 0.0
+TotCatch_1922 39568.1 0.0
+TotCatch_1923 40985.8 0.0
+TotCatch_1924 40804 0.0
+TotCatch_1925 39387.4 0.0
+TotCatch_1926 39793.4 0.0
+TotCatch_1927 41059.7 0.0
+TotCatch_1928 44429.3 0.0
+TotCatch_1929 46970 0.0
+TotCatch_1930 45818.5 0.0
+TotCatch_1931 44346.5 0.0
+TotCatch_1932 47442.4 0.0
+TotCatch_1933 51251.6 0.0
+TotCatch_1934 56688.1 0.0
+TotCatch_1935 61901.5 0.0
+TotCatch_1936 66848.6 0.0
+TotCatch_1937 65956.1 0.0
+TotCatch_1938 62249.1 0.0
+TotCatch_1939 49888 0.0
+TotCatch_1940 45636.4 0.0
+TotCatch_1941 55966.9 0.0
+TotCatch_1942 66673.9 0.0
+TotCatch_1943 71115.9 0.0
+TotCatch_1944 62827.8 0.0
+TotCatch_1945 61175.2 0.0
+TotCatch_1946 48460.5 0.0
+TotCatch_1947 40076.5 0.0
+TotCatch_1948 43668.6 0.0
+TotCatch_1949 58675.6 0.0
+TotCatch_1950 64668.6 0.0
+TotCatch_1951 57711.1 0.0
+TotCatch_1952 58312.6 0.0
+TotCatch_1953 79457.7 0.0
+TotCatch_1954 96631.4 0.0
+TotCatch_1955 164196 0.0
+TotCatch_1956 177095 0.0
+TotCatch_1957 160947 0.0
+TotCatch_1958 161433 0.0
+TotCatch_1959 166257 0.0
+TotCatch_1960 159004 0.0
+TotCatch_1961 161853 0.0
+TotCatch_1962 169860 0.0
+TotCatch_1963 192604 0.0
+TotCatch_1964 185791 0.0
+TotCatch_1965 191943 0.0
+TotCatch_1966 216528 0.0
+TotCatch_1967 268067 0.0
+TotCatch_1968 306627 0.0
+TotCatch_1969 282516 0.0
+TotCatch_1970 293579 0.0
+TotCatch_1971 304634 0.0
+TotCatch_1972 288269 0.0
+TotCatch_1973 344641 0.0
+TotCatch_1974 368810 0.0
+TotCatch_1975 345316 0.0
+TotCatch_1976 309968 0.0
+TotCatch_1977 301632 0.0
+TotCatch_1978 281229 0.0
+TotCatch_1979 272359 0.0
+TotCatch_1980 274720 0.0
+TotCatch_1981 285713 0.0
+TotCatch_1982 282173 0.0
+TotCatch_1983 297618 0.0
+TotCatch_1984 281815 0.0
+TotCatch_1985 271637 0.0
+TotCatch_1986 248580 0.0
+TotCatch_1987 255911 0.0
+TotCatch_1988 268076 0.0
+TotCatch_1989 267278 0.0
+TotCatch_1990 229752 0.0
+TotCatch_1991 204564 0.0
+TotCatch_1992 198645 0.0
+TotCatch_1993 211628 0.0
+TotCatch_1994 212257 0.0
+TotCatch_1995 186827 0.0
+TotCatch_1996 167194 0.0
+TotCatch_1997 163934 0.0
+TotCatch_1998 178460 0.0
+TotCatch_1999 160336 0.0
+TotCatch_2000 162268 0.0
+TotCatch_2001 138738 0.0
+TotCatch_2002 125327 0.0
+TotCatch_2003 111583 0.0
+TotCatch_2004 96714.1 0.0
+TotCatch_2005 94351.8 0.0
+TotCatch_2006 108256 0.0
+TotCatch_2007 116335 0.0
+TotCatch_2008 123971 0.0
+TotCatch_2009 130825 0.0
+TotCatch_2010 132609 0.0
+TotCatch_2011 119436 0.0
+TotCatch_2012 103717 0.0
+TotCatch_2013 105730 0.0
+TotCatch_2014 131206 0.0
+TotCatch_2015 169076 0.0
+TotCatch_2016 190781 0.0
+TotCatch_2017 205453 0.0
+TotCatch_2018 226402 0.0
+TotCatch_2019 200029 0.0
+TotCatch_2020 167010 0.0
+TotCatch_2021 124193 0.0
+TotCatch_2022 92066.5 0.0
+TotCatch_2023 96824 0.0
+TotCatch_2024 136884 0.0
+TotCatch_2025 158346 0.0
+TotCatch_2026 177138 0.0
