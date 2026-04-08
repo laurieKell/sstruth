@@ -9,4 +9,13 @@
 .Rproj.user/
 .DS_Store
 *.csv
+data/
+!data/ss3/
+!data/ss3/**/
+data/ss3/**
+!data/ss3/**/control.ss
+!data/ss3/**/data.ss
+!data/ss3/**/forecast.ss
+!data/ss3/**/starter.ss
+!data/ss3/**/wtatage.ss
 
