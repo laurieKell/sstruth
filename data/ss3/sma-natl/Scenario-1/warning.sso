@@ -1,5 +1,0 @@
-Note 1 Information: Max data length bin: 320  < max pop len bins: 380; so will accumulate larger pop len bins
-Note 2 Suggestion: Are you sure you want so few early recrdevs? Better to include in range of main recdevs 5
-Warning 1 : Setting in starter does not request all priors, and 40 parameters have priors and are not estimated, so their prior not included in obj_fun.
-Note 3 Information: A revised protocol for the Fcast_yr specification is available and recommended.
- 1 warning  and 3 notes 
