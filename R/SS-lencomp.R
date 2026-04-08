@@ -7,7 +7,7 @@
 ##' @return A named list with elements \code{db}, \code{fit},
 ##' \code{controls}, and \code{summary}.
 ##' @export
-setGeneric('ssLen',     function(x,...) standardGeneric('ssLen'))
+setGeneric('ssLen',     function(x,...) methods::standardGeneric('ssLen'))
 
 setMethod('ssLen',    signature(x='character'), function(x,...){
   lns=r4ss::SS_output(x,forecast  =FALSE, 
@@ -24,3 +24,4 @@ setMethod('ssLen',    signature(x='character'), function(x,...){
     names(lns)=c("db","fit","controls","summary")
   
     lns})
+

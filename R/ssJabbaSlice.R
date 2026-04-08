@@ -4,7 +4,7 @@
 #' @param ... Additional arguments passed to `ss3om::readFLSss3()`.
 #' @return FLR-compatible truth object.
 #' @export
-setGeneric("ssReadTruth", function(x, ...) standardGeneric("ssReadTruth"))
+setGeneric("ssReadTruth", function(x, ...) methods::standardGeneric("ssReadTruth"))
 
 #' @rdname ssReadTruth
 #' @export
@@ -18,7 +18,7 @@ setMethod("ssReadTruth", signature(x = "character"), function(x, ...) {
 #' @param ... Reserved for future method-specific options.
 #' @return Data frame with `year`, `catch`, `stock`, and `ssb`.
 #' @export
-setGeneric("ssAsTruth", function(x, ...) standardGeneric("ssAsTruth"))
+setGeneric("ssAsTruth", function(x, ...) methods::standardGeneric("ssAsTruth"))
 
 #' @rdname ssAsTruth
 #' @export
@@ -70,7 +70,7 @@ setMethod("ssAsTruth", signature(x = "ANY"), function(x, ...) {
 #' @param ... Reserved.
 #' @return Named list with `catch`, `cpue`, `se`, and metadata.
 #' @export
-setGeneric("ssAsJabba", function(x, ...) standardGeneric("ssAsJabba"))
+setGeneric("ssAsJabba", function(x, ...) methods::standardGeneric("ssAsJabba"))
 
 #' @rdname ssAsJabba
 #' @export
@@ -99,7 +99,7 @@ setMethod("ssAsJabba", signature(x = "data.frame"), function(x, indexCol = "ssb"
 #' @param ... Additional arguments passed to JABBA fit function.
 #' @return Fit object (or fit specification when `run = FALSE`).
 #' @export
-setGeneric("ssFitJabba", function(x, ...) standardGeneric("ssFitJabba"))
+setGeneric("ssFitJabba", function(x, ...) methods::standardGeneric("ssFitJabba"))
 
 #' @rdname ssFitJabba
 #' @export
@@ -130,7 +130,7 @@ setMethod("ssFitJabba", signature(x = "list"), function(x, run = FALSE, fitFun =
 #' @param ... Additional args passed to fit function.
 #' @return List with truth object, truth table, JABBA input, and fit/spec.
 #' @export
-setGeneric("ssJabbaSlice", function(x, ...) standardGeneric("ssJabbaSlice"))
+setGeneric("ssJabbaSlice", function(x, ...) methods::standardGeneric("ssJabbaSlice"))
 
 #' @rdname ssJabbaSlice
 #' @export
@@ -141,4 +141,5 @@ setMethod("ssJabbaSlice", signature(x = "character"), function(x, runFit = FALSE
   jabbaFit=ssFitJabba(jabbaIn, run = runFit, ...)
   list(truth = truthObj, truth_df = truthDf, jabba_input = jabbaIn, jabba_fit = jabbaFit)
 })
+
 

@@ -274,7 +274,7 @@ ssPeCompare<-function(tseries,
 #' @param ... Additional arguments passed to [ssPeCompare()].
 #' @return The same list returned by [ssPeCompare()].
 #' @export
-setGeneric("ssPe", function(x, ...) standardGeneric("ssPe"))
+setGeneric("ssPe", function(x, ...) methods::standardGeneric("ssPe"))
 
 #' @rdname ssPe
 #' @export
@@ -299,7 +299,7 @@ setMethod("ssPe", signature(x = "list"), function(x, ...) {
 #' @param ... Additional arguments passed to [ssPe()].
 #' @return Named list of diagnostics metrics.
 #' @export
-setGeneric("ssPeDiagnose", function(x, ...) standardGeneric("ssPeDiagnose"))
+setGeneric("ssPeDiagnose", function(x, ...) methods::standardGeneric("ssPeDiagnose"))
 
 #' @rdname ssPeDiagnose
 #' @export
@@ -312,4 +312,5 @@ setMethod("ssPeDiagnose", signature(x = "character"), function(x, ...) {
 setMethod("ssPeDiagnose", signature(x = "list"), function(x, ...) {
   ssPe(x, ...)$diagnostics
 })
+
 

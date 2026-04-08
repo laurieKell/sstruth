@@ -8,7 +8,7 @@
 ##' @return A data.frame with fleet, year, season, observed and expected CPUE,
 ##' residuals, and diagnostics fields.
 ##' @export
-setGeneric('ssU',     function(x,...) standardGeneric('ssU'))
+setGeneric('ssU',     function(x,...) methods::standardGeneric('ssU'))
 
 setMethod('ssU',    signature(x='character'), function(x,...){
   res=subset(r4ss::SS_output(x, 
@@ -25,3 +25,4 @@ setMethod('ssU',    signature(x='character'), function(x,...){
   res=subset(plyr::ddply(res,.(name,season),diags::diagsFn),!is.na(residual))
   
   res})
+
