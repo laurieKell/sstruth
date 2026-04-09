@@ -1,0 +1,285 @@
+---
+title: "SS3 to JABBA Workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SS3 to JABBA Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+This vignette shows the intended end-to-end workflow in `sstruth`:
+
+1. read in SS3
+2. create a JABBA object
+3. run JABBA
+4. plot diagnostics
+5. compare historical state
+6. compare current state relative to reference points
+7. plot production functions with stock trajectory
+8. run projections for `F = FMSY`, `F = Fcurrent`, and `F = 0`
+9. run a simple backtest
+
+```{r setup}
+library(sstruth)
+library(ggplot2)
+```
+
+## Inputs
+
+Set your SS3 run directory:
+
+```{r}
+ssDir=ssAsJabba("C:/active/flr/sstruth/data/ss3/sma-natl/Scenario-1")
+
+```
+
+## 1) Read SS3
+
+```{r, eval = FALSE}
+truthObj=ssReadTruth(ssDir)
+truthDf =ssAsTruth(truth_obj)
+head(truthDf)
+```
+
+## 2) Create a JABBA object
+
+```{r, eval = FALSE}
+jbInp=ssAsJabba(truthDf, indexCol = "ssb", cv = 0.2)
+str(jbInp)
+```
+
+## 3) Run JABBA
+
+Use the workflow wrapper for a single object containing truth, inputs, fit, and comparisons.
+
+```{r, eval = FALSE}
+wf=ssJabbaWorkflow(
+  x = ssDir,
+  runFit = TRUE,     # requires JABBA installed
+  cv = 0.2,
+  proj_years = 10
+)
+```
+
+If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
+
+## 4) Plot diagnostics
+
+### 4a) Standardized residual diagnostics table
+
+```{r, eval = FALSE}
+diag_ss=ssDiags(ssDir, "ss")
+head(diag_ss)
+
+diag_jb=ssDiags(wf, "jabba")
+head(diag_jb)
+```
+
+### 4b) Comparison plots
+
+```{r, eval = FALSE}
+plots=ssPlotJabbaComparisons(wf$comparisons)
+plots$historical
+plots$current_state
+plots$production
+plots$projections
+```
+
+## 5) Compare historical state
+
+```{r, eval = FALSE}
+hist_cmp=wf$comparisons$historical
+head(hist_cmp)
+```
+
+## 6) Current state relative to reference points
+
+```{r, eval = FALSE}
+cur_cmp=wf$comparisons$current_state
+cur_cmp
+```
+
+The `current_state` table includes:
+
+- `truth_B_Bmsy`, `jabba_B_Bmsy`
+- `truth_F_Fmsy`, `jabba_F_Fmsy`
+
+## 7) Production functions with stock trajectory
+
+The production-function comparison table is already available:
+
+```{r, eval = FALSE}
+prod_cmp=wf$comparisons$production
+head(prod_cmp)
+```
+
+To overlay the observed stock trajectory on top of the production curves:
+
+```{r, eval = FALSE}
+hist_cmp=wf$comparisons$historical
+
+traj_truth=transform(
+  hist_cmp,
+  source = "truth",
+  stock = truth_stock,
+  production = c(diff(truth_stock) + head(truth_catch, -1), NA)
+)[, c("year", "source", "stock", "production")]
+
+traj_jabba=transform(
+  hist_cmp,
+  source = "jabba",
+  stock = jabba_stock,
+  production = c(diff(jabba_stock) + head(jabba_catch, -1), NA)
+)[, c("year", "source", "stock", "production")]
+
+traj=rbind(traj_truth, traj_jabba)
+traj=traj[is.finite(traj$stock) & is.finite(traj$production), ]
+
+ggplot() +
+  geom_line(
+    data = prod_cmp,
+    aes(x = stock, y = production, color = source),
+    linewidth = 1
+  ) +
+  geom_path(
+    data = traj,
+    aes(x = stock, y = production, color = source),
+    alpha = 0.6
+  ) +
+  geom_point(
+    data = traj,
+    aes(x = stock, y = production, color = source),
+    size = 1
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Production functions with stock trajectory",
+    x = "Biomass",
+    y = "Surplus production",
+    color = NULL
+  )
+```
+
+## 8) Projection scenarios: FMSY, Fcurrent, F0
+
+`ssCompareProjections()` currently returns `F0` and `FFMSY`.  
+This section adds `Fcurrent` with a local helper that uses the same Schaefer form.
+
+```{r, eval = FALSE}
+fit_schaefer_local=function(year, biomass, catch) {
+  ok=is.finite(year) & is.finite(biomass) & is.finite(catch) & biomass > 0
+  year=year[ok]; biomass=biomass[ok]; catch=catch[ok]
+  ord=order(year)
+  biomass=biomass[ord]; catch=catch[ord]
+  fit=lm(
+    I(
+      ((biomass[-1] - biomass[-length(biomass)]) + catch[-length(catch)]) /
+        pmax(biomass[-length(biomass)], 1e-12)
+    ) ~ biomass[-length(biomass)]
+  )
+  r=coef(fit)[1]
+  slope=coef(fit)[2]
+  K=-r / slope
+  list(r = as.numeric(r), K = as.numeric(K), Bmsy = 0.5 * as.numeric(K), Fmsy = 0.5 * as.numeric(r))
+}
+
+project_local=function(year0, B0, pars, nyears, Fval) {
+  yrs=seq.int(year0 + 1, by = 1, length.out = nyears)
+  B=numeric(nyears)
+  C=numeric(nyears)
+  Bt=B0
+  for (i in seq_len(nyears)) {
+    Ct=Fval * Bt
+    Bt=max(Bt + pars$r * Bt * (1 - Bt / pars$K) - Ct, 1e-10)
+    B[i]=Bt
+    C[i]=Ct
+  }
+  data.frame(year = yrs, stock = B, catch = C, F = Fval)
+}
+
+hist_cmp=wf$comparisons$historical
+cur_cmp =wf$comparisons$current_state
+yterm   =max(hist_cmp$year, na.rm = TRUE)
+
+t_pars=fit_schaefer_local(hist_cmp$year, hist_cmp$truth_stock, hist_cmp$truth_catch)
+j_pars=fit_schaefer_local(hist_cmp$year, hist_cmp$jabba_stock, hist_cmp$jabba_catch)
+
+Fcur_truth=with(cur_cmp, truth_F_Fmsy * t_pars$Fmsy)
+Fcur_jabba=with(cur_cmp, jabba_F_Fmsy * j_pars$Fmsy)
+
+proj_truth=rbind(
+  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = 0), scenario = "F0", source = "truth"),
+  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = t_pars$Fmsy), scenario = "FFMSY", source = "truth"),
+  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = Fcur_truth), scenario = "Fcurrent", source = "truth")
+)
+
+proj_jabba=rbind(
+  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = 0), scenario = "F0", source = "jabba"),
+  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = j_pars$Fmsy), scenario = "FFMSY", source = "jabba"),
+  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = Fcur_jabba), scenario = "Fcurrent", source = "jabba")
+)
+
+proj_all=rbind(proj_truth, proj_jabba)
+proj_all
+```
+
+Plot:
+
+```{r, eval = FALSE}
+ggplot(proj_all, aes(year, stock, color = scenario)) +
+  geom_line(linewidth = 1) +
+  facet_wrap(~source, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Projections under F0, Fcurrent, FFMSY", y = "Biomass", color = NULL)
+```
+
+## 9) Backtest
+
+A simple retrospective-style backtest truncates the terminal year, reruns the workflow, and compares 1-step-ahead predictions against realized values.
+
+```{r, eval = FALSE}
+backtest_years=function(ssDir, terminal_years, runFit = FALSE, cv = 0.2) {
+  out=vector("list", length(terminal_years))
+  names(out)=terminal_years
+
+  base_truth=ssAsTruth(ssReadTruth(ssDir))
+
+  for (i in seq_along(terminal_years)) {
+    y_end=terminal_years[i]
+    trn=base_truth[base_truth$year <= y_end, , drop = FALSE]
+    tst=base_truth[base_truth$year == (y_end + 1), , drop = FALSE]
+    if (nrow(tst) == 0) next
+
+    jin=ssAsJabba(trn, indexCol = "ssb", cv = cv)
+    jfit=ssFitJabba(jin, run = runFit)
+
+    cur=ssCompareCurrentState(trn, jfit, jin)
+
+    out[[i]]=data.frame(
+      terminal_year = y_end,
+      realized_year = y_end + 1,
+      realized_stock = tst$stock[1],
+      realized_catch = tst$catch[1],
+      truth_terminal_stock = cur$truth_stock[1],
+      jabba_terminal_stock = cur$jabba_stock[1]
+    )
+  }
+  do.call(rbind, out)
+}
+
+bt=backtest_years(ssDir, terminal_years = 2005:2015, runFit = FALSE)
+bt
+```
+
+---
+
+This workflow is designed so each component can be used standalone (`ssReadTruth`, `ssAsJabba`, `ssFitJabba`, `ssDiags`, `ssCompare*`, `ssPlot*`) or through `ssJabbaWorkflow()` for a single end-to-end object.

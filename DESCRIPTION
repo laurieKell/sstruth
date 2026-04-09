@@ -17,6 +17,7 @@ Imports:
     diags,
     future,
     future.apply,
+    ggplot2,
     methods,
     plyr,
     r4ss,

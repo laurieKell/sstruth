@@ -181,7 +181,6 @@ ssPeCompare<-function(tseries,
   misspec_flag=isTRUE((is.finite(curve_rel_rmse) && curve_rel_rmse > 0.20) || (is.finite(pe_cor_ssb) && pe_cor_ssb < 0.60))
 
   if (isTRUE(makePlots)) {
-    if (!requireNamespace("ggplot2", quietly = TRUE)) stop("Package 'ggplot2' is required when makePlots = TRUE")
     ylim_B=c(0, max(c(SP_B[SP_B >= 0], PT_B_grid_plot), na.rm = TRUE) * 1.05)
     ylim_SSB=c(0, max(c(SP_SSB[SP_SSB >= 0], eq_SP[eq_keep], PT_SSB_grid_plot), na.rm = TRUE) * 1.05)
     ylim_PE=range(c(eps_B_PT, eps_SSB_PT, pe_ref), na.rm = TRUE)
