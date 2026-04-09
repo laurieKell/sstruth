@@ -7,11 +7,11 @@ utils::globalVariables(c("year", "value", "series", "metric", "stock", "B_Bmsy",
 #' @param ... Additional arguments passed to `ss3om::readFLSss3()`.
 #' @return FLR-compatible truth object.
 #' @export
-setGeneric("ssReadTruth", function(x, ...) standardGeneric("ssReadTruth"))
+setGeneric("readTruth", function(x, ...) standardGeneric("readTruth"))
 
-#' @rdname ssReadTruth
+#' @rdname readTruth
 #' @export
-setMethod("ssReadTruth", signature(x = "character"), function(x, ...) {
+setMethod("readTruth", signature(x = "character"), function(x, ...) {
   ss3om::readFLSss3(x, ...)
 })
 
@@ -21,11 +21,11 @@ setMethod("ssReadTruth", signature(x = "character"), function(x, ...) {
 #' @param ... Reserved for future method-specific options.
 #' @return Data frame with `year`, `catch`, `stock`, and `ssb`.
 #' @export
-setGeneric("ssAsTruth", function(x, ...) standardGeneric("ssAsTruth"))
+setGeneric("asTruth", function(x, ...) standardGeneric("asTruth"))
 
-#' @rdname ssAsTruth
+#' @rdname asTruth
 #' @export
-setMethod("ssAsTruth", signature(x = "list"), function(x, ...) {
+setMethod("asTruth", signature(x = "list"), function(x, ...) {
   ts=x$tseries %||% x$timeseries
   if (is.null(ts) || !is.data.frame(ts)) stop("Could not find time-series data in input object.")
 
@@ -47,9 +47,9 @@ setMethod("ssAsTruth", signature(x = "list"), function(x, ...) {
   out[is.finite(out$year), , drop = FALSE]
 })
 
-#' @rdname ssAsTruth
+#' @rdname asTruth
 #' @export
-setMethod("ssAsTruth", signature(x = "ANY"), function(x, ...) {
+setMethod("asTruth", signature(x = "ANY"), function(x, ...) {
   flqYearSum<-function(z) {
     if (is.null(z)) return(NULL)
     arr=as.array(z)
@@ -99,23 +99,23 @@ setMethod("ssAsTruth", signature(x = "ANY"), function(x, ...) {
     }
   }
   if (is.null(ts) && is.list(x)) ts=x$tseries %||% x$timeseries
-  if (is.null(ts)) stop("Unsupported truth object type for ssAsTruth().")
-  ssAsTruth(list(tseries = ts))
+  if (is.null(ts)) stop("Unsupported truth object type for asTruth().")
+  asTruth(list(tseries = ts))
 })
 
 #' Translate truth table to JABBA input list
 #'
-#' @param x Truth data frame from `ssAsTruth()`.
+#' @param x Truth data frame from `asTruth()`.
 #' @param indexCol Optional column name to use as index (defaults to `ssb`).
 #' @param cv Optional scalar CV used to construct index SE.
 #' @param ... Reserved.
 #' @return Named list with `catch`, `cpue`, `se`, and metadata.
 #' @export
-setGeneric("ssAsJabba", function(x, ...) standardGeneric("ssAsJabba"))
+setGeneric("asJabba", function(x, ...) standardGeneric("asJabba"))
 
-#' @rdname ssAsJabba
+#' @rdname asJabba
 #' @export
-setMethod("ssAsJabba", signature(x = "data.frame"), function(x, indexCol = "ssb", cv = 0.2, ...) {
+setMethod("asJabba", signature(x = "data.frame"), function(x, indexCol = "ssb", cv = 0.2, ...) {
   if (!all(c("year", "catch") %in% names(x))) stop("Truth data must contain year and catch.")
   if (!indexCol %in% names(x)) stop("indexCol not found in truth data.")
 
@@ -134,17 +134,17 @@ setMethod("ssAsJabba", signature(x = "data.frame"), function(x, indexCol = "ssb"
 
 #' Fit JABBA model from translated input
 #'
-#' @param x JABBA input list from `ssAsJabba()`.
+#' @param x JABBA input list from `asJabba()`.
 #' @param run Logical; if `FALSE`, returns prepared fit spec only.
 #' @param fitFun Optional exported JABBA function name.
 #' @param ... Additional arguments passed to JABBA fit function.
 #' @return Fit object (or fit specification when `run = FALSE`).
 #' @export
-setGeneric("ssFitJabba", function(x, ...) standardGeneric("ssFitJabba"))
+setGeneric("fitJabba", function(x, ...) standardGeneric("fitJabba"))
 
-#' @rdname ssFitJabba
+#' @rdname fitJabba
 #' @export
-setMethod("ssFitJabba", signature(x = "list"), function(x, run = FALSE, fitFun = NULL, ...) {
+setMethod("fitJabba", signature(x = "list"), function(x, run = FALSE, fitFun = NULL, ...) {
   spec=list(model = "JABBA", input = x, args = list(...))
   if (!isTRUE(run)) return(spec)
 
@@ -194,23 +194,23 @@ setMethod("ssFitJabba", signature(x = "list"), function(x, run = FALSE, fitFun =
 #' @param ... Additional args passed to fit function.
 #' @return List with truth object, truth table, JABBA input, and fit/spec.
 #' @export
-setGeneric("ssJabbaSlice", function(x, ...) standardGeneric("ssJabbaSlice"))
+setGeneric("sliceJabba", function(x, ...) standardGeneric("sliceJabba"))
 
-#' @rdname ssJabbaSlice
+#' @rdname sliceJabba
 #' @export
-setMethod("ssJabbaSlice", signature(x = "character"), function(x, runFit = FALSE, cv = 0.2, ...) {
-  truthObj=ssReadTruth(x)
-  truthDf=ssAsTruth(truthObj)
-  jabbaIn=ssAsJabba(truthDf, cv = cv)
-  jabbaFit=ssFitJabba(jabbaIn, run = runFit, ...)
+setMethod("sliceJabba", signature(x = "character"), function(x, runFit = FALSE, cv = 0.2, ...) {
+  truthObj=readTruth(x)
+  truthDf=asTruth(truthObj)
+  jabbaIn=asJabba(truthDf, cv = cv)
+  jabbaFit=fitJabba(jabbaIn, run = runFit, ...)
   list(truth = truthObj, truth_df = truthDf, jabba_input = jabbaIn, jabba_fit = jabbaFit)
 })
 
-setMethod("ssAsJabba", signature(x = "character"),
+setMethod("asJabba", signature(x = "character"),
           function(x, indexCol = "ssb", cv = 0.2, ...) {
-            truthObj <- ssReadTruth(x, ...)
-            truthDf  <- ssAsTruth(truthObj)
-            ssAsJabba(truthDf, indexCol = indexCol, cv = cv)
+            truthObj <- readTruth(x, ...)
+            truthDf  <- asTruth(truthObj)
+            asJabba(truthDf, indexCol = indexCol, cv = cv)
           }
 )
 
@@ -331,6 +331,40 @@ setMethod("ssAsJabba", signature(x = "character"),
     return(out)
   }
 
+  .extractTsArray<-function(arr, years = NULL, catch = NULL) {
+    if (is.null(arr) || is.null(dim(arr))) return(NULL)
+    dn=dimnames(arr)
+    d=dim(arr)
+    stock=NULL
+
+    if (length(d) == 3) {
+      i2=if (!is.null(dn[[2]]) && "mu" %in% dn[[2]]) match("mu", dn[[2]]) else 1L
+      i3=if (!is.null(dn[[3]]) && "B" %in% dn[[3]]) match("B", dn[[3]]) else 1L
+      stock=as.numeric(arr[, i2, i3])
+    } else if (length(d) == 2) {
+      i2=if (!is.null(dn[[2]]) && "B" %in% dn[[2]]) match("B", dn[[2]]) else 1L
+      stock=as.numeric(arr[, i2])
+    } else {
+      return(NULL)
+    }
+
+    yy=as.numeric(years %||% dn[[1]] %||% seq_along(stock))
+    cc=as.numeric(catch %||% rep(NA_real_, length(stock)))
+    keep=is.finite(yy) & is.finite(stock)
+    if (sum(keep) == 0) return(NULL)
+    data.frame(year = yy[keep], catch = cc[keep], stock = stock[keep], stringsAsFactors = FALSE)
+  }
+
+  arrCandidates=list(
+    if (is.list(fit$timeseries)) fit$timeseries$timeseries else NULL,
+    fit$timeseries,
+    fit$output$timeseries
+  )
+  for (aa in arrCandidates) {
+    arrOut=.extractTsArray(aa, years = fit$yr %||% jabba_input$yrs, catch = fit$catch %||% jabba_input$catch)
+    if (!is.null(arrOut) && nrow(arrOut) > 0) return(arrOut)
+  }
+
   candidates=list(
     fit$timeseries,
     fit$tseries,
@@ -377,10 +411,10 @@ setMethod("ssAsJabba", signature(x = "character"),
 #' @param cv Index CV for JABBA input.
 #' @param fitFun Optional exported JABBA fitting function.
 #' @param proj_years Number of projection years.
-#' @param ... Additional args passed to `ssFitJabba()`.
+#' @param ... Additional args passed to `fitJabba()`.
 #' @return List with truth data, JABBA inputs/fit, and comparison tables.
 #' @export
-ssJabbaWorkflow<-function(
+workflow<-function(
   x,
   runFit = FALSE,
   indexCol = "ssb",
@@ -389,31 +423,31 @@ ssJabbaWorkflow<-function(
   proj_years = 10,
   ...
 ) {
-  truthObj=ssReadTruth(x)
-  truthDf=ssAsTruth(truthObj)
-  jabbaIn=ssAsJabba(truthDf, indexCol = indexCol, cv = cv)
-  jabbaFit=ssFitJabba(jabbaIn, run = runFit, fitFun = fitFun, ...)
-  comp=ssCompareJabba(truthDf, jabbaFit, jabbaIn, proj_years = proj_years)
-
-  list(
+  truthObj=readTruth(x)
+  truthDf=asTruth(truthObj)
+  jabbaIn=asJabba(truthDf, indexCol = indexCol, cv = cv)
+  jabbaFit=fitJabba(jabbaIn, run = runFit, fitFun = fitFun, ...)
+  cmp=compareAll(truthDf, jabbaFit, jabbaIn, proj_years = proj_years)
+  out=list(
     truth = truthObj,
     truth_df = truthDf,
     jabba_input = jabbaIn,
     jabba_fit = jabbaFit,
-    comparisons = comp
+    comparisons = cmp
   )
+  out
 }
 
 # Comparisons --------------------------------------------------------------
 
 #' Compare SS truth and JABBA historical trajectories
 #'
-#' @param truthDf Data frame from `ssAsTruth()`.
+#' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @return Data frame comparing observed trajectories and relative scales.
 #' @export
-ssCompareHistorical<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
+compareHistorical<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
   req=c("year", "catch", "stock")
   if (!all(req %in% names(truthDf))) stop("truthDf must contain year, catch, and stock.")
   jdf=.fromJabbaFit(jabbaFit, jabbaInput)
@@ -441,13 +475,13 @@ ssCompareHistorical<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
 
 #' Compare SS truth and JABBA current state in terminal year
 #'
-#' @param truthDf Data frame from `ssAsTruth()`.
+#' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @return One-row data frame with terminal status metrics.
 #' @export
-ssCompareCurrentState<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
-  hist=ssCompareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
+compareCurrent<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
+  hist=compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
   yy=max(hist$year[is.finite(hist$year)], na.rm = TRUE)
   cur=hist[hist$year == yy, , drop = FALSE]
   if (nrow(cur) == 0) return(data.frame())
@@ -471,14 +505,14 @@ ssCompareCurrentState<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
 
 #' Compare SS truth and JABBA production functions
 #'
-#' @param truthDf Data frame from `ssAsTruth()`.
+#' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @param n Number of biomass grid points.
 #' @return Data frame with production curves for both sources.
 #' @export
-ssCompareProduction<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50) {
-  hist=ssCompareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
+compareProduction<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50) {
+  hist=compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
   tPars=.fitSchaefer(hist$year, hist$truth_stock, hist$truth_catch)
   jPars=.fitSchaefer(hist$year, hist$jabba_stock, hist$jabba_catch)
 
@@ -510,14 +544,14 @@ ssCompareProduction<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 5
 
 #' Compare SS truth and JABBA projections under F=0 and F=FMSY
 #'
-#' @param truthDf Data frame from `ssAsTruth()`.
+#' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @param years Number of projection years.
 #' @return Projection data frame for both models and both F scenarios.
 #' @export
-ssCompareProjections<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, years = 10) {
-  hist=ssCompareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
+compareProjection<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, years = 10) {
+  hist=compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
   yy=max(hist$year[is.finite(hist$year)], na.rm = TRUE)
   cur=hist[hist$year == yy, , drop = FALSE]
   if (nrow(cur) == 0) return(data.frame())
@@ -561,18 +595,18 @@ ssCompareProjections<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, year
 
 #' Build all four SS-vs-JABBA comparison outputs
 #'
-#' @param truthDf Data frame from `ssAsTruth()`.
+#' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @param proj_years Number of projection years.
 #' @return Named list with historical, current, production, and projections.
 #' @export
-ssCompareJabba<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10) {
+compareAll<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10) {
   list(
-    historical = ssCompareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
-    current_state = ssCompareCurrentState(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
-    production = ssCompareProduction(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
-    projections = ssCompareProjections(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput, years = proj_years)
+    historical    = compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
+    current_state = compareCurrent(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
+    production = compareProduction(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
+    projections = compareProjection(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput, years = proj_years)
   )
 }
 
@@ -580,10 +614,10 @@ ssCompareJabba<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years
 
 #' Plot historical trend comparison using ggplot2
 #'
-#' @param historical Historical table from `ssCompareHistorical()`.
+#' @param historical Historical table from `compareHistorical()`.
 #' @return ggplot object.
 #' @export
-ssPlotHistorical<-function(historical) {
+plotHistorical<-function(historical) {
   if (!is.data.frame(historical) || nrow(historical) == 0) stop("historical must be a non-empty data frame.")
 
   yr=historical$year
@@ -613,10 +647,10 @@ ssPlotHistorical<-function(historical) {
 
 #' Plot current-state comparison using ggplot2
 #'
-#' @param current_state Current-state table from `ssCompareCurrentState()`.
+#' @param current_state Current-state table from `compareCurrent()`.
 #' @return ggplot object.
 #' @export
-ssPlotCurrentState<-function(current_state) {
+plotCurrent<-function(current_state) {
   if (!is.data.frame(current_state) || nrow(current_state) == 0) stop("current_state must be a non-empty data frame.")
 
   cs=current_state[1, , drop = FALSE]
@@ -642,10 +676,10 @@ ssPlotCurrentState<-function(current_state) {
 
 #' Plot production function comparison using ggplot2
 #'
-#' @param production Production table from `ssCompareProduction()`.
+#' @param production Production table from `compareProduction()`.
 #' @return ggplot object.
 #' @export
-ssPlotProduction<-function(production) {
+plotProduction<-function(production) {
   if (!is.data.frame(production) || nrow(production) == 0) stop("production must be a non-empty data frame.")
 
   dat=production[is.finite(production$stock) & is.finite(production$production), , drop = FALSE]
@@ -663,10 +697,10 @@ ssPlotProduction<-function(production) {
 
 #' Plot projections (F=0 and F=FMSY) using ggplot2
 #'
-#' @param projections Projection table from `ssCompareProjections()`.
+#' @param projections Projection table from `compareProjection()`.
 #' @return ggplot object.
 #' @export
-ssPlotProjections<-function(projections) {
+plotProjection<-function(projections) {
   if (!is.data.frame(projections) || nrow(projections) == 0) stop("projections must be a non-empty data frame.")
 
   dat=projections[is.finite(projections$year) & is.finite(projections$B_Bmsy), , drop = FALSE]
@@ -686,16 +720,16 @@ ssPlotProjections<-function(projections) {
 
 #' Build all SS-vs-JABBA comparison plots using ggplot2
 #'
-#' @param comparisons Named list from `ssCompareJabba()` or `ssJabbaWorkflow()$comparisons`.
+#' @param comparisons Named list from `compareAll()` or `workflow()$comparisons`.
 #' @return Named list of ggplot objects.
 #' @export
-ssPlotJabbaComparisons<-function(comparisons) {
+plotAll<-function(comparisons) {
   if (!is.list(comparisons)) stop("comparisons must be a named list.")
   list(
-    historical = ssPlotHistorical(comparisons$historical),
-    current_state = ssPlotCurrentState(comparisons$current_state),
-    production = ssPlotProduction(comparisons$production),
-    projections = ssPlotProjections(comparisons$projections)
+    historical = plotHistorical(comparisons$historical),
+    current_state = plotCurrent(comparisons$current_state),
+    production = plotProduction(comparisons$production),
+    projections = plotProjection(comparisons$projections)
   )
 }
 

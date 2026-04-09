@@ -29,8 +29,14 @@ This vignette shows the intended end-to-end workflow in `sstruth`:
 9. run a simple backtest
 
 ```{r setup}
-library(sstruth)
 library(ggplot2)
+
+library(FLCore)
+library(ggplotFL)
+
+library(r4ss)
+library(ss3om)
+library(sstruth)
 ```
 
 ## Inputs
@@ -38,22 +44,21 @@ library(ggplot2)
 Set your SS3 run directory:
 
 ```{r}
-ssDir=ssAsJabba("C:/active/flr/sstruth/data/ss3/sma-natl/Scenario-1")
-
+ssDir="C:/active/flr/sstruth/data/ss3/sma-natl/Scenario-1"
 ```
 
 ## 1) Read SS3
 
-```{r, eval = FALSE}
-truthObj=ssReadTruth(ssDir)
-truthDf =ssAsTruth(truthObj)
+```{r, eval=TRUE}
+truthObj=readTruth(ssDir)
+truthDf =asTruth(truthObj)
 head(truthDf)
 ```
 
 ## 2) Create a JABBA object
 
-```{r, eval = FALSE}
-jbInp=ssAsJabba(truthDf, indexCol = "ssb", cv = 0.2)
+```{r, eval=TRUE}
+jbInp=asJabba(truthDf, indexCol = "ssb", cv = 0.2)
 str(jbInp)
 ```
 
@@ -61,11 +66,8 @@ str(jbInp)
 
 Use the workflow wrapper for a single object containing truth, inputs, fit, and comparisons.
 
-```{r, eval = FALSE}
-wf=ssJabbaWorkflow(ssDir,
-  runFit     = TRUE,     # requires JABBA installed
-  cv         = 0.2,
-  proj_years = 10)
+```{r, eval=TRUE}
+wf=workflow(ssDir, runFit = TRUE, cv = 0.2, proj_years = 10)
 ```
 
 If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
@@ -74,18 +76,20 @@ If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
 
 ### 4a) Standardized residual diagnostics table
 
-```{r, eval = FALSE}
-diagSS=ssDiags(ssDir, "ss")
-head(diagSS)
+```{r, eval=TRUE}
+dgs=rbind(diags(ssDir, "ss"),
+          diags(wf, "jabba"))
 
-diagJB=ssDiags(wf, "jabba")
-head(diagJB)
+ggplot(dgs)+
+  geom_point(aes(year,residual,col=method))+
+  facet_wrap(~name,scale="free")
+
 ```
 
 ### 4b) Comparison plots
 
-```{r, eval = FALSE}
-plots=ssPlotJabbaComparisons(wf$comparisons)
+```{r, eval=TRUE}
+plots=plotAll(wf$comparisons)
 plots$historical
 plots$current_state
 plots$production
@@ -94,14 +98,16 @@ plots$projections
 
 ## 5) Compare historical state
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 hist=wf$comparisons$historical
-head(hist)
+ggplot(hist)+
+  geom_line(aes(year,truth_stock))+
+  geom_line(aes(year,jabba_stock))
 ```
 
 ## 6) Current state relative to reference points
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 cur=wf$comparisons$current_state
 cur
 ```
@@ -115,14 +121,14 @@ The `current_state` table includes:
 
 The production-function comparison table is already available:
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 prod=wf$comparisons$production
 head(prod)
 ```
 
 To overlay the observed stock trajectory on top of the production curves:
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 hist=wf$comparisons$historical
 
 traj_truth=transform(
@@ -169,10 +175,10 @@ ggplot() +
 
 ## 8) Projection scenarios: FMSY, Fcurrent, F0
 
-`ssCompareProjections()` currently returns `F0` and `FFMSY`.  
+`compareProjection()` currently returns `F0` and `FFMSY`.  
 This section adds `Fcurrent` with a local helper that uses the same Schaefer form.
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 fit_schaefer_local=function(year, biomass, catch) {
   ok=is.finite(year) & is.finite(biomass) & is.finite(catch) & biomass > 0
   year=year[ok]; biomass=biomass[ok]; catch=catch[ok]
@@ -232,7 +238,7 @@ proj_all
 
 Plot:
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 ggplot(proj_all, aes(year, stock, color = scenario)) +
   geom_line(linewidth = 1) +
   facet_wrap(~source, scales = "free_y") +
@@ -244,12 +250,12 @@ ggplot(proj_all, aes(year, stock, color = scenario)) +
 
 A simple retrospective-style backtest truncates the terminal year, reruns the workflow, and compares 1-step-ahead predictions against realized values.
 
-```{r, eval = FALSE}
+```{r, eval=TRUE}
 backtest_years=function(ssDir, terminal_years, runFit = FALSE, cv = 0.2) {
   out=vector("list", length(terminal_years))
   names(out)=terminal_years
 
-  base_truth=ssAsTruth(ssReadTruth(ssDir))
+  base_truth=sstruth::asTruth(sstruth::readTruth(ssDir))
 
   for (i in seq_along(terminal_years)) {
     y_end=terminal_years[i]
@@ -257,10 +263,10 @@ backtest_years=function(ssDir, terminal_years, runFit = FALSE, cv = 0.2) {
     tst=base_truth[base_truth$year == (y_end + 1), , drop = FALSE]
     if (nrow(tst) == 0) next
 
-    jin=ssAsJabba(trn, indexCol = "ssb", cv = cv)
-    jfit=ssFitJabba(jin, run = runFit)
+    jin=sstruth::asJabba(trn, indexCol = "ssb", cv = cv)
+    jfit=sstruth::fitJabba(jin, run = runFit)
 
-    cur=ssCompareCurrentState(trn, jfit, jin)
+    cur=compareCurrent(trn, jfit, jin)
 
     out[[i]]=data.frame(
       terminal_year = y_end,
@@ -280,4 +286,4 @@ bt
 
 ---
 
-This workflow is designed so each component can be used standalone (`ssReadTruth`, `ssAsJabba`, `ssFitJabba`, `ssDiags`, `ssCompare*`, `ssPlot*`) or through `ssJabbaWorkflow()` for a single end-to-end object.
+This workflow is designed so each component can be used standalone (`readTruth`, `asJabba`, `fitJabba`, `diags`, `compare*`, `plot*`) or through `workflow()` for a single end-to-end object.

@@ -6,7 +6,7 @@ utils::globalVariables(c("qqnorm"))
 #' @param y Numeric y values.
 #' @return Named numeric vector with `a` and `b`.
 #' @export
-ssQqLine<-function(x, y) {
+qqLine<-function(x, y) {
   qtlx=stats::quantile(x, prob = c(0.25, 0.75), na.rm = TRUE)
   qtly=stats::quantile(y, prob = c(0.25, 0.75), na.rm = TRUE)
   a=(qtly[1] - qtly[2]) / (qtlx[1] - qtlx[2])
@@ -23,7 +23,7 @@ ssQqLine<-function(x, y) {
 #' @param se_col Optional standard error column name.
 #' @return Data frame with standard diagnostics columns appended.
 #' @export
-ssDiagStandard<-function(
+diagStandard<-function(
   x,
   group_cols = c("method", "name", "season"),
   residual_col = "residual",
@@ -35,11 +35,14 @@ ssDiagStandard<-function(
   out=x
   out$residual=as.numeric(out[[residual_col]])
 
-  if (se_col %in% names(out)) {
-    out$std_residual=.safeDiv(out$residual, as.numeric(out[[se_col]]))
-  } else {
-    sd_res=stats::sd(out$residual, na.rm = TRUE)
-    out$std_residual=.safeDiv(out$residual, sd_res)
+  hasStd="std_residual" %in% names(out) && any(is.finite(out$std_residual))
+  if (!hasStd) {
+    if (se_col %in% names(out) && any(is.finite(out[[se_col]]))) {
+      out$std_residual=.safeDiv(out$residual, as.numeric(out[[se_col]]))
+    } else {
+      sd_res=stats::sd(out$residual, na.rm = TRUE)
+      out$std_residual=.safeDiv(out$residual, sd_res)
+    }
   }
 
   grp=group_cols[group_cols %in% names(out)]
@@ -50,7 +53,7 @@ ssDiagStandard<-function(
     qq=stats::qqnorm(rr, plot.it = FALSE)
     out$qqx[idx]=qq$x
     out$qqy[idx]=qq$y
-    ab=ssQqLine(qq$x, qq$y)
+    ab=qqLine(qq$x, qq$y)
     out$qq_hat[idx]=ab["a"] * out$qqx[idx] + ab["b"]
     return(out)
   }
@@ -72,7 +75,7 @@ ssDiagStandard<-function(
       qq=stats::qqnorm(rr, plot.it = FALSE)
       out$qqx[ord]=qq$x
       out$qqy[ord]=qq$y
-      ab=ssQqLine(qq$x, qq$y)
+      ab=qqLine(qq$x, qq$y)
       out$qq_hat[ord]=ab["a"] * out$qqx[ord] + ab["b"]
     }
   }
@@ -86,7 +89,7 @@ ssDiagStandard<-function(
 #' @param ... Reserved.
 #' @return Standardized residual diagnostics data frame.
 #' @export
-ssDiagSS<-function(x, ...) {
+diagSS<-function(x, ...) {
   cpue=r4ss::SS_output(
     dir = x,
     forecast = FALSE,
@@ -120,23 +123,54 @@ ssDiagSS<-function(x, ...) {
     stringsAsFactors = FALSE
   )
   out=out[is.finite(out$residual), , drop = FALSE]
-  ssDiagStandard(out)
+  diagStandard(out)
 }
 
 #' Extract standardized diagnostics from SS-vs-JABBA comparison
 #'
-#' @param x Workflow result list from `ssJabbaWorkflow()`, or a list containing `historical`.
+#' @param x Workflow result list from `workflow()`, or a list containing `historical`.
 #' @param ... Reserved.
 #' @return Standardized residual diagnostics data frame.
 #' @export
-ssDiagJabba<-function(x, ...) {
+diagJabba<-function(x, ...) {
+  fitObj=NULL
+  if (is.list(x) && is.list(x$jabba_fit)) fitObj=x$jabba_fit
+  if (is.list(x) && is.null(fitObj) && !is.null(x$diags) && !is.null(x$residuals)) fitObj=x
+
+  if (!is.null(fitObj) && is.data.frame(fitObj$diags) && nrow(fitObj$diags) > 0) {
+    di=fitObj$diags
+    nm_name=resolveCol(di, c("name"))
+    nm_year=resolveCol(di, c("year", "yr"))
+    nm_season=resolveCol(di, c("season", "seas"))
+    nm_obs=resolveCol(di, c("obs"))
+    nm_hat=resolveCol(di, c("hat", "exp"))
+    nm_res=resolveCol(di, c("residual", "dev"))
+    if (!any(is.na(c(nm_name, nm_year, nm_obs, nm_hat, nm_res)))) {
+      out=data.frame(
+        method = "jabba",
+        name = as.character(di[[nm_name]]),
+        year = as.numeric(di[[nm_year]]),
+        season = if (!is.na(nm_season)) as.numeric(di[[nm_season]]) else NA_real_,
+        obs = as.numeric(di[[nm_obs]]),
+        hat = as.numeric(di[[nm_hat]]),
+        residual = as.numeric(di[[nm_res]]),
+        se = NA_real_,
+        stringsAsFactors = FALSE
+      )
+
+      stdVec=as.numeric(fitObj$std.residuals %||% NA)
+      if (length(stdVec) >= nrow(out)) out$std_residual=stdVec[seq_len(nrow(out))]
+      return(diagStandard(out))
+    }
+  }
+
   hist=NULL
   if (is.list(x) && is.list(x$comparisons) && is.data.frame(x$comparisons$historical)) {
     hist=x$comparisons$historical
   } else if (is.list(x) && is.data.frame(x$historical)) {
     hist=x$historical
   } else if (is.list(x) && all(c("truth_df", "jabba_fit", "jabba_input") %in% names(x))) {
-    hist=ssCompareHistorical(x$truth_df, jabbaFit = x$jabba_fit, jabbaInput = x$jabba_input)
+    hist=compareHistorical(x$truth_df, jabbaFit = x$jabba_fit, jabbaInput = x$jabba_input)
   }
   if (is.null(hist) || !is.data.frame(hist) || nrow(hist) == 0) return(data.frame())
 
@@ -158,7 +192,7 @@ ssDiagJabba<-function(x, ...) {
     mk(hist$truth_stock, hist$jabba_stock, "stock"),
     mk(hist$truth_catch, hist$jabba_catch, "catch")
   )
-  ssDiagStandard(out)
+  diagStandard(out)
 }
 
 #' Unified diagnostics extractor (inspired by diags package methods)
@@ -168,37 +202,38 @@ ssDiagJabba<-function(x, ...) {
 #' @param ... Additional arguments passed to method-specific extractors.
 #' @return Standardized residual diagnostics data frame.
 #' @export
-setGeneric("ssDiags", function(object, method, ...) standardGeneric("ssDiags"))
+setGeneric("diags", function(object, method, ...) standardGeneric("diags"))
 
-#' @rdname ssDiags
+#' @rdname diags
 #' @export
-setMethod("ssDiags", signature(object = "character", method = "character"),
+setMethod("diags", signature(object = "character", method = "character"),
           function(object, method, ...) {
             m=tolower(method[1])
-            if (startsWith(m, "ss")) return(ssDiagSS(object, ...))
+            if (startsWith(m, "ss")) return(diagSS(object, ...))
             stop("Unsupported character input method: ", method)
           })
 
-#' @rdname ssDiags
+#' @rdname diags
 #' @export
-setMethod("ssDiags", signature(object = "list", method = "character"),
+setMethod("diags", signature(object = "list", method = "character"),
           function(object, method, ...) {
             m=tolower(method[1])
-            if (startsWith(m, "ja")) return(ssDiagJabba(object, ...))
+            if (startsWith(m, "ja")) return(diagJabba(object, ...))
             if (startsWith(m, "ss")) {
               ssdir=object$ssDir %||% object$path %||% NA_character_
               if (is.na(ssdir)) stop("For method='ss', list input must contain `ssDir` or `path`.")
-              return(ssDiagSS(ssdir, ...))
+              return(diagSS(ssdir, ...))
             }
             stop("Unsupported list input method: ", method)
           })
 
-#' @rdname ssDiags
+#' @rdname diags
 #' @export
-setMethod("ssDiags", signature(object = "data.frame", method = "character"),
+setMethod("diags", signature(object = "data.frame", method = "character"),
           function(object, method, residual_col = "residual", se_col = "se", ...) {
             m=tolower(method[1])
             if (!startsWith(m, "st")) stop("For data.frame, use method='standard'.")
-            ssDiagStandard(object, residual_col = residual_col, se_col = se_col)
+            diagStandard(object, residual_col = residual_col, se_col = se_col)
           })
+
 
