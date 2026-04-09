@@ -50,8 +50,46 @@ setMethod("ssAsTruth", signature(x = "list"), function(x, ...) {
 #' @rdname ssAsTruth
 #' @export
 setMethod("ssAsTruth", signature(x = "ANY"), function(x, ...) {
+  flqYearSum<-function(z) {
+    if (is.null(z)) return(NULL)
+    arr=as.array(z)
+    dm=dimnames(arr)
+    yrs=dm$year %||% if (length(dm) >= 2) dm[[2]] else NULL
+    if (is.null(yrs)) return(NULL)
+    vals=apply(arr, 2, sum, na.rm = TRUE)
+    data.frame(year = as.numeric(yrs), value = as.numeric(vals), stringsAsFactors = FALSE)
+  }
+
+  if (isS4(x) && methods::is(x, "FLStock")) {
+    nms=methods::slotNames(x)
+    catchObj=if ("catch" %in% nms) methods::slot(x, "catch") else NULL
+    stockObj=if ("stock" %in% nms) methods::slot(x, "stock") else NULL
+    ssbObj=NULL
+    if ("mat" %in% nms && !is.null(stockObj)) {
+      ssbObj=try(stockObj * methods::slot(x, "mat"), silent = TRUE)
+      if (inherits(ssbObj, "try-error")) ssbObj=NULL
+    }
+
+    catchDf=flqYearSum(catchObj)
+    stockDf=flqYearSum(stockObj)
+    ssbDf=flqYearSum(ssbObj)
+
+    if (is.null(catchDf) || is.null(stockDf)) {
+      stop("Could not extract yearly catch/stock from FLStock object.")
+    }
+    out=merge(catchDf, stockDf, by = "year", all = TRUE, sort = TRUE)
+    names(out)[2:3]=c("catch", "stock")
+    if (!is.null(ssbDf)) {
+      out=merge(out, ssbDf, by = "year", all = TRUE, sort = TRUE)
+      names(out)[4]="ssb"
+    } else {
+      out$ssb=out$stock
+    }
+    return(out[is.finite(out$year), c("year", "catch", "stock", "ssb"), drop = FALSE])
+  }
+
   ts=NULL
-  if (methods::isS4(x)) {
+  if (isS4(x)) {
     nms=methods::slotNames(x)
     for (nm in c("tseries", "timeseries")) {
       if (nm %in% nms) {
@@ -122,6 +160,29 @@ setMethod("ssFitJabba", signature(x = "list"), function(x, run = FALSE, fitFun =
   }
 
   fitFn=getExportedValue("JABBA", fitName)
+
+  if (identical(fitName, "fit_jabba")) {
+    jbinput=x
+    if (is.null(jbinput$settings)) {
+      hasCore=all(c("catch", "cpue", "se") %in% names(x))
+      if (!hasCore) stop("For fit_jabba, input must be a jbinput or contain catch/cpue/se.")
+
+      yrs=as.integer(x$yrs %||% seq_along(x$catch))
+      catchDf=data.frame(year = yrs, catch = as.numeric(x$catch), stringsAsFactors = FALSE)
+      cpueDf=data.frame(year = yrs, cpue = as.numeric(x$cpue), stringsAsFactors = FALSE)
+      seDf=data.frame(year = yrs, se = as.numeric(x$se), stringsAsFactors = FALSE)
+
+      jbinput=JABBA::build_jabba(
+        catch = catchDf,
+        cpue = cpueDf,
+        se = seDf,
+        projection = FALSE,
+        verbose = FALSE
+      )
+    }
+    return(do.call(fitFn, c(list(jbinput = jbinput), list(...))))
+  }
+
   do.call(fitFn, c(list(x), list(...)))
 })
 

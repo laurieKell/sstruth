@@ -46,7 +46,7 @@ ssDir=ssAsJabba("C:/active/flr/sstruth/data/ss3/sma-natl/Scenario-1")
 
 ```{r, eval = FALSE}
 truthObj=ssReadTruth(ssDir)
-truthDf =ssAsTruth(truth_obj)
+truthDf =ssAsTruth(truthObj)
 head(truthDf)
 ```
 
@@ -62,12 +62,10 @@ str(jbInp)
 Use the workflow wrapper for a single object containing truth, inputs, fit, and comparisons.
 
 ```{r, eval = FALSE}
-wf=ssJabbaWorkflow(
-  x = ssDir,
-  runFit = TRUE,     # requires JABBA installed
-  cv = 0.2,
-  proj_years = 10
-)
+wf=ssJabbaWorkflow(ssDir,
+  runFit     = TRUE,     # requires JABBA installed
+  cv         = 0.2,
+  proj_years = 10)
 ```
 
 If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
@@ -77,11 +75,11 @@ If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
 ### 4a) Standardized residual diagnostics table
 
 ```{r, eval = FALSE}
-diag_ss=ssDiags(ssDir, "ss")
-head(diag_ss)
+diagSS=ssDiags(ssDir, "ss")
+head(diagSS)
 
-diag_jb=ssDiags(wf, "jabba")
-head(diag_jb)
+diagJB=ssDiags(wf, "jabba")
+head(diagJB)
 ```
 
 ### 4b) Comparison plots
@@ -97,15 +95,15 @@ plots$projections
 ## 5) Compare historical state
 
 ```{r, eval = FALSE}
-hist_cmp=wf$comparisons$historical
-head(hist_cmp)
+hist=wf$comparisons$historical
+head(hist)
 ```
 
 ## 6) Current state relative to reference points
 
 ```{r, eval = FALSE}
-cur_cmp=wf$comparisons$current_state
-cur_cmp
+cur=wf$comparisons$current_state
+cur
 ```
 
 The `current_state` table includes:
@@ -118,24 +116,24 @@ The `current_state` table includes:
 The production-function comparison table is already available:
 
 ```{r, eval = FALSE}
-prod_cmp=wf$comparisons$production
-head(prod_cmp)
+prod=wf$comparisons$production
+head(prod)
 ```
 
 To overlay the observed stock trajectory on top of the production curves:
 
 ```{r, eval = FALSE}
-hist_cmp=wf$comparisons$historical
+hist=wf$comparisons$historical
 
 traj_truth=transform(
-  hist_cmp,
+  hist,
   source = "truth",
   stock = truth_stock,
   production = c(diff(truth_stock) + head(truth_catch, -1), NA)
 )[, c("year", "source", "stock", "production")]
 
 traj_jabba=transform(
-  hist_cmp,
+  hist,
   source = "jabba",
   stock = jabba_stock,
   production = c(diff(jabba_stock) + head(jabba_catch, -1), NA)
@@ -146,7 +144,7 @@ traj=traj[is.finite(traj$stock) & is.finite(traj$production), ]
 
 ggplot() +
   geom_line(
-    data = prod_cmp,
+    data = prod,
     aes(x = stock, y = production, color = source),
     linewidth = 1
   ) +
@@ -206,26 +204,26 @@ project_local=function(year0, B0, pars, nyears, Fval) {
   data.frame(year = yrs, stock = B, catch = C, F = Fval)
 }
 
-hist_cmp=wf$comparisons$historical
-cur_cmp =wf$comparisons$current_state
-yterm   =max(hist_cmp$year, na.rm = TRUE)
+hist=wf$comparisons$historical
+cur =wf$comparisons$current_state
+yterm   =max(hist$year, na.rm = TRUE)
 
-t_pars=fit_schaefer_local(hist_cmp$year, hist_cmp$truth_stock, hist_cmp$truth_catch)
-j_pars=fit_schaefer_local(hist_cmp$year, hist_cmp$jabba_stock, hist_cmp$jabba_catch)
+t_pars=fit_schaefer_local(hist$year, hist$truth_stock, hist$truth_catch)
+j_pars=fit_schaefer_local(hist$year, hist$jabba_stock, hist$jabba_catch)
 
-Fcur_truth=with(cur_cmp, truth_F_Fmsy * t_pars$Fmsy)
-Fcur_jabba=with(cur_cmp, jabba_F_Fmsy * j_pars$Fmsy)
+Fcur_truth=with(cur, truth_F_Fmsy * t_pars$Fmsy)
+Fcur_jabba=with(cur, jabba_F_Fmsy * j_pars$Fmsy)
 
 proj_truth=rbind(
-  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = 0), scenario = "F0", source = "truth"),
-  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = t_pars$Fmsy), scenario = "FFMSY", source = "truth"),
-  transform(project_local(yterm, cur_cmp$truth_stock, t_pars, nyears = 10, Fval = Fcur_truth), scenario = "Fcurrent", source = "truth")
+  transform(project_local(yterm, cur$truth_stock, t_pars, nyears = 10, Fval = 0), scenario = "F0", source = "truth"),
+  transform(project_local(yterm, cur$truth_stock, t_pars, nyears = 10, Fval = t_pars$Fmsy), scenario = "FFMSY", source = "truth"),
+  transform(project_local(yterm, cur$truth_stock, t_pars, nyears = 10, Fval = Fcur_truth), scenario = "Fcurrent", source = "truth")
 )
 
 proj_jabba=rbind(
-  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = 0), scenario = "F0", source = "jabba"),
-  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = j_pars$Fmsy), scenario = "FFMSY", source = "jabba"),
-  transform(project_local(yterm, cur_cmp$jabba_stock, j_pars, nyears = 10, Fval = Fcur_jabba), scenario = "Fcurrent", source = "jabba")
+  transform(project_local(yterm, cur$jabba_stock, j_pars, nyears = 10, Fval = 0), scenario = "F0", source = "jabba"),
+  transform(project_local(yterm, cur$jabba_stock, j_pars, nyears = 10, Fval = j_pars$Fmsy), scenario = "FFMSY", source = "jabba"),
+  transform(project_local(yterm, cur$jabba_stock, j_pars, nyears = 10, Fval = Fcur_jabba), scenario = "Fcurrent", source = "jabba")
 )
 
 proj_all=rbind(proj_truth, proj_jabba)
