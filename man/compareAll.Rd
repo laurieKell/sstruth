@@ -4,7 +4,13 @@
 \alias{compareAll}
 \title{Build all four SS-vs-JABBA comparison outputs}
 \usage{
-compareAll(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10)
+compareAll(
+  truthDf,
+  jabbaFit = NULL,
+  jabbaInput = NULL,
+  proj_years = 10,
+  ssDir = NULL
+)
 }
 \arguments{
 \item{truthDf}{Data frame from \code{asTruth()}.}
@@ -14,6 +20,9 @@ compareAll(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10)
 \item{jabbaInput}{JABBA input list.}
 
 \item{proj_years}{Number of projection years.}
+
+\item{ssDir}{Optional SS3 directory passed to \code{\link[=compareProduction]{compareProduction()}} for the equilibrium
+curve via \code{\link[FLRebuild:curveSS]{FLRebuild::curveSS()}}.}
 }
 \value{
 Named list with historical, current, production, and projections.

@@ -4,7 +4,13 @@
 \alias{compareProduction}
 \title{Compare SS truth and JABBA production functions}
 \usage{
-compareProduction(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50)
+compareProduction(
+  truthDf,
+  jabbaFit = NULL,
+  jabbaInput = NULL,
+  n = 50,
+  ssDir = NULL
+)
 }
 \arguments{
 \item{truthDf}{Data frame from \code{asTruth()}.}
@@ -13,7 +19,13 @@ compareProduction(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50)
 
 \item{jabbaInput}{JABBA input list.}
 
-\item{n}{Number of biomass grid points.}
+\item{n}{Number of biomass grid points for the \strong{JABBA} Schaefer curve (ignored for SS3
+when \code{ssDir} is set).}
+
+\item{ssDir}{Optional SS3 run directory. If non-\code{NULL}, the SS3 curve is \strong{not} fitted:
+it is read from \code{\link[FLRebuild:curveSS]{FLRebuild::curveSS()}} as equilibrium \strong{yield} vs \strong{SSB} (columns
+\code{stock} = SSB, \code{production} = yield). If \code{NULL}, SS3 is approximated with a
+Schaefer fit to the truth time series (same as JABBA side).}
 }
 \value{
 Data frame with production curves for both sources.

@@ -1,3 +1,132 @@
+#' Build SS3 time-series and equilibrium curve without FLR dependencies
+#'
+#' Reads an SS3 run via \code{r4ss::SS_output()} and returns a list with
+#' \code{tseries} and \code{curve}, mirroring the pieces used by
+#' \code{ssPe()} / \code{ssPeCompare()}.
+#'
+#' The returned \code{tseries} includes additional columns:
+#' \code{P_obs}, \code{P_hat}, \code{B_df}, \code{B}, \code{C_t}, \code{P_ssb}.
+#'
+#' @param x SS3 directory path.
+#' @param ... Reserved for future options.
+#' @return List with elements \code{tseries}, \code{curve}, and \code{refpts}.
+#' @export
+curveSS <- function(x, ...) {
+  if (!is.character(x) || length(x) != 1L || !nzchar(x) || !dir.exists(x)) {
+    stop("x must be a single existing SS3 run directory.", call. = FALSE)
+  }
+  if (!requireNamespace("r4ss", quietly = TRUE)) {
+    stop("Package 'r4ss' is required.", call. = FALSE)
+  }
+
+  rep <- r4ss::SS_output(x, verbose = FALSE, printstats = FALSE, covar = FALSE)
+  ts <- tsDf(rep)
+  if (!is.data.frame(ts) || nrow(ts) == 0L) {
+    stop("Could not extract non-empty timeseries from SS_output().", call. = FALSE)
+  }
+
+  if ("Era" %in% names(ts)) {
+    ts <- ts[as.character(ts$Era) == "TIME", , drop = FALSE]
+  }
+  if (!nrow(ts)) stop("No TIME rows in SS_output() timeseries.", call. = FALSE)
+
+  yr_col <- resolveCol(ts, c("Yr", "Year", "year"))
+  ssb_col <- resolveCol(ts, c("SpawnBio", "SSB", "ssb"))
+  bio_col <- resolveCol(ts, c("Bio_smry", "Bio_all", "biomass", "stock"))
+  if (any(is.na(c(yr_col, ssb_col, bio_col)))) {
+    stop("timeseries must include year, SpawnBio/SSB, and biomass columns.", call. = FALSE)
+  }
+
+  catch_cols <- grep("^dead\\(B\\):", names(ts), value = TRUE)
+  if (!length(catch_cols)) catch_cols <- grep("^retain\\(B\\):", names(ts), value = TRUE)
+  if (!length(catch_cols)) catch_cols <- resolveCol(ts, c("totcatch", "yield", "catch"))
+
+  ts$.__year__ <- as.integer(ts[[yr_col]])
+  ts$.__ssb__ <- as.numeric(ts[[ssb_col]])
+  ts$.__bio__ <- as.numeric(ts[[bio_col]])
+  if (length(catch_cols) == 1L && !is.na(catch_cols)) {
+    ts$.__catch__ <- as.numeric(ts[[catch_cols]])
+  } else if (length(catch_cols) > 1L) {
+    ts$.__catch__ <- rowSums(ts[, catch_cols, drop = FALSE], na.rm = TRUE)
+  } else {
+    ts$.__catch__ <- NA_real_
+  }
+
+  years <- sort(unique(ts$.__year__[is.finite(ts$.__year__)]))
+  if (!length(years)) stop("No finite years in timeseries.", call. = FALSE)
+
+  by_year <- lapply(years, function(y) {
+    z <- ts[ts$.__year__ == y, , drop = FALSE]
+    data.frame(
+      year = y,
+      biomass = tail(z$.__bio__[is.finite(z$.__bio__)], 1),
+      ssb = tail(z$.__ssb__[is.finite(z$.__ssb__)], 1),
+      yield = sum(z$.__catch__[is.finite(z$.__catch__)], na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  })
+  tseries <- do.call(rbind, by_year)
+  rownames(tseries) <- NULL
+
+  n <- nrow(tseries)
+  if (n < 2L) stop("Need at least 2 yearly rows in tseries.", call. = FALSE)
+  B <- as.numeric(tseries$biomass)
+  B_df <- as.numeric(tseries$ssb)
+  C_t <- as.numeric(tseries$yield)
+
+  P_obs <- c(B[-1] - B[-n] + C_t[-n], NA_real_)
+  P_ssb <- c(B_df[-1] - B_df[-n] + C_t[-n], NA_real_)
+  pf <- P_ssb
+  pe <- c(
+    NA_real_,
+    log(pmax(B_df[-1], .Machine$double.eps)) -
+      log(pmax(B_df[-n] - C_t[-n] + pf[-n], .Machine$double.eps))
+  )
+
+  tseries$P_obs <- P_obs
+  tseries$P_hat <- rep(NA_real_, n)
+  tseries$B_df <- B_df
+  tseries$B <- B
+  tseries$C_t <- C_t
+  tseries$P_ssb <- P_ssb
+  tseries$pf <- pf
+  tseries$pe <- pe
+
+  eq <- rep$equil_yield %||% rep$equilibrium_yield %||% rep$Equil_yield
+  if (!is.data.frame(eq) || nrow(eq) == 0L) {
+    stop("Could not find non-empty equilibrium yield table in SS_output().", call. = FALSE)
+  }
+  eq_ssb <- resolveCol(eq, c("SSB", "ssb", "SpawnBio"))
+  eq_yld <- resolveCol(eq, c("Tot_Catch", "tot_catch", "yield", "Catch"))
+  if (any(is.na(c(eq_ssb, eq_yld)))) {
+    stop("Equilibrium table must contain SSB and catch/yield columns.", call. = FALSE)
+  }
+  curve <- data.frame(
+    ssb = as.numeric(eq[[eq_ssb]]),
+    yield = as.numeric(eq[[eq_yld]]),
+    stringsAsFactors = FALSE
+  )
+  keep <- is.finite(curve$ssb) & is.finite(curve$yield) & curve$ssb >= 0
+  curve <- curve[keep, , drop = FALSE]
+  if (!nrow(curve)) stop("No finite rows in equilibrium curve.", call. = FALSE)
+
+  rp <- rep$derived_quants
+  get_dq <- function(keys) {
+    if (!is.data.frame(rp) || !all(c("Label", "Value") %in% names(rp))) return(NA_real_)
+    idx <- match(tolower(keys), tolower(as.character(rp$Label)))
+    idx <- idx[!is.na(idx)]
+    if (!length(idx)) return(NA_real_)
+    as.numeric(rp$Value[idx[1]])
+  }
+  refpts <- data.frame(
+    bmsy = get_dq(c("SSB_MSY", "Btgt_MSY")),
+    msy = get_dq(c("MSY")),
+    stringsAsFactors = FALSE
+  )
+
+  list(tseries = tseries, curve = curve, refpts = refpts)
+}
+
 #' Compare SS production-function signal against PT fits
 #'
 #' Fits Pella-Tomlinson (PT) production curves in biomass and SSB space, compares

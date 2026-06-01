@@ -35,3 +35,7 @@ List with truth data, JABBA inputs/fit, and comparison tables.
 \description{
 End-to-end SS3 to JABBA workflow and comparisons
 }
+\details{
+For \code{compareProduction()}, the SS3 side uses \code{\link[FLRebuild:curveSS]{FLRebuild::curveSS()}} on \code{x}
+when \code{x} is the SS3 directory.
+}

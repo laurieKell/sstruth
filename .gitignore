@@ -18,4 +18,5 @@ data/ss3/**
 !data/ss3/**/forecast.ss
 !data/ss3/**/starter.ss
 !data/ss3/**/wtatage.ss
+vignettes/figures.Rmd
 

@@ -7,29 +7,72 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, global-options, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  echo = FALSE,
   warning = FALSE,
-  message = FALSE
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6
 )
 ```
 
-This vignette shows the intended end-to-end workflow in `sstruth`:
+## Introduction
 
-1. read in SS3
-2. create a JABBA object
-3. run JABBA
-4. plot diagnostics
-5. compare historical state
-6. compare current state relative to reference points
-7. plot production functions with stock trajectory
-8. run projections for `F = FMSY`, `F = Fcurrent`, and `F = 0`
-9. run a simple backtest
+### What this vignette shows
+
+It walks through one **reproducible path** in `sstruth`: read a fitted Stock Synthesis (SS3) run, translate it to a truth table, build JABBA inputs and (optionally) fit JABBA, then compare SS3 and JABBA on **historical biomass**, **terminal status vs MSY**, **production and yield**, **short-term projections**, and a **simple backtest**. Everything can be driven from `workflow()` plus the `compare*()` and `plot*()` helpers.
+
+### How to interpret the comparisons
+
+**Roles of the two models.** In code, SS3-based quantities use `source = "truth"` (also labelled **SS3** in figures). JABBA outputs use `source = "jabba"` (**JABBA**). SS3 is the **reference** system; JABBA is a simpler biomass model fit to catch and an index from the truth table.
+
+**Colours.** Throughout, **blue** is SS3 and **orange** is JABBA (`cols_ss3_jabba` in the setup chunk).
+
+**Index for JABBA.** `asJabba(..., indexCol = "stock")` uses **exploitable / total biomass** from `asTruth()`, not spawning stock, unless you change `indexCol`.
+
+**SS3 production curve.** When you use `workflow(ssDir, ...)`, `compareProduction()` takes the SS3 side from **`FLRebuild::curveSS(ssDir)`** (equilibrium **yield vs SSB** from the fitted assessment), not a Schaefer regression on the time series. The JABBA side is still a **Schaefer** curve fitted to its catch/biomass series. Call `compareProduction(..., ssDir = NULL)` if you want both sides from the same Schaefer construction.
+
+**Other Schaefer overlays** (e.g. custom vignette chunks) may still fit a **discrete-time Schaefer** to each series for diagnostics; that is separate from the SS3 equilibrium curve above.
+
+**Reading the production and yield figures (Section 7).**
+
+- **Surplus production vs biomass:** **SS3** smooth curve = equilibrium **yield vs SSB** from `curveSS` (not Schaefer). **JABBA** smooth curve = Schaefer `P(B)`. **Path + points** = empirical SP along the observed series (Section 7 uses **SSB** on the x-axis for SS3 so it matches the SS3 curve; **biomass** for JABBA).
+- **Dimensionless panels:** **x = B/BMSY** and **y = yield/MSY** (SS3) or **P/MSY** (JABBA). SS3 uses **`interpolate_ss3_curve_scale()`**: **Bden** and **Mden** are **curveSS** refpts when they match the interpolated peak (5% tol), otherwise the **curve peak** — so the equilibrium curve is **(1, 1)** at MSY. **Dotted lines** at **x = 1** and **y = 1**.
+
+**Projections (Section 8).** Biomass is shown as **B/BMSY** using the same Schaefer **BMSY** as the projection dynamics. **Line type** distinguishes **F = 0**, **F = FMSY**, and **F = Fcurrent** (current F from the terminal year, expressed on each model’s scale).
+
+**Runs tests (Section 4a).** JARA residuals are checked for **randomness** (runs and crossings). Shaded facets show whether the usual run-test criteria pass; this is about **index / trend diagnostics**, not SS3 vs JABBA agreement.
+
+### Roadmap
+
+| Section | What you get |
+|--------|----------------|
+| **1–3** | SS3 directory → `readTruth` / `asTruth` → `asJabba` → `workflow()` |
+| **4** | JARA runs tests on diagnostics; `plotAll()` four-panel comparison |
+| **5–6** | Historical biomass; terminal-year **B/BMSY** and **F/FMSY** |
+| **7** | Production curves, trajectory in production space, yield vs biomass |
+| **8** | Forward **B/BMSY** under F0, FMSY, Fcurrent |
+| **9** | Retrospective truncation and 1-step-ahead style checks |
+
+**Packages:** `ss3om`, `r4ss`, optional **JABBA** (fit), **JARA** (Section 4a), **FLRebuild** (SS3 equilibrium curve via `curveSS` when using `workflow()`). Set `ssDir` in **Inputs** to your own SS3 run if needed.
+
+### Workflow checklist (i–vi)
+
+| Step | What to use |
+|------|-------------|
+| **i)** Read SS3 | `readTruth(ssDir)`, `asTruth()` |
+| **ii)** JABBA on catch + exploitable biomass | `asJabba(truthDf, indexCol = "stock")`, `fitJabba(..., run = TRUE)` or `workflow(ssDir, runFit = TRUE, indexCol = "stock")` |
+| **iii)** SP vs biomass (absolute & relative scaling) | `wf$comparisons$production` (`compareProduction`); Section 7 figures for trajectories and yield vs biomass. SS3 curve from `FLRebuild::curveSS`; JABBA curve = Schaefer on the series. |
+| **iv)** As (iii) in **B/BMSY** and **yield/MSY** | Section 7 dimensionless panels: **x = B/BMSY**, **y** scaled by the same **MSY** as **Mden** (SS3) or Schaefer **MSY** (JABBA). |
+| **v)** Projections SS3 & JABBA | `wf$comparisons$projections` (`compareProjection`); Section 8 adds Fcurrent via local Schaefer helpers. |
+| **vi)** Backtest with **reported catch** | This vignette §9 = simple truncate-and-compare JABBA vs realized series. Full SS3 **reported-catch** forecast scenarios across retros use `runFlevelProjections` / `ss3-retro-projections` tooling, not §9 alone. |
 
 ```{r setup}
 library(ggplot2)
+library(plyr)
 
 library(FLCore)
 library(ggplotFL)
@@ -37,105 +80,357 @@ library(ggplotFL)
 library(r4ss)
 library(ss3om)
 library(sstruth)
+
+# Consistent styling across figures in this vignette.
+theme_set(
+  theme_bw(base_size = 14) +
+    theme(
+      legend.position = "bottom",
+      panel.grid.minor = element_blank(),
+      strip.background = element_rect(fill = "grey95", colour = "grey80"),
+      strip.text = element_text(size = 12, face = "bold"),
+      axis.title = element_text(size = 13),
+      axis.text = element_text(size = 11),
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 11),
+      plot.title = element_text(face = "bold", size = 16),
+      panel.spacing = grid::unit(0.25, "lines")
+    )
+)
+
+# Colours for SS3 (truth) vs JABBA in comparison figures (Okabe–Ito–style contrast).
+cols_ss3_jabba=c("truth" = "#0072B2", "jabba" = "#D55E00")
+
+iFig=0
 ```
 
 ## Inputs
 
 Set your SS3 run directory:
 
-```{r}
+```{r, ssdir-input}
 ssDir="C:/active/flr/sstruth/data/ss3/sma-natl/Scenario-1"
 ```
 
 ## 1) Read SS3
 
-```{r, eval=TRUE}
+```{r, read-ss3, eval=TRUE}
 truthObj=readTruth(ssDir)
 truthDf =asTruth(truthObj)
-head(truthDf)
 ```
 
 ## 2) Create a JABBA object
 
-```{r, eval=TRUE}
-jbInp=asJabba(truthDf, indexCol = "ssb", cv = 0.2)
-str(jbInp)
+JABBA is fed an abundance **index** from the truth table. Here we use **`stock`** (exploitable / total biomass proxy from `asTruth()`), not spawning stock.
+
+```{r, create-jabba-input, eval=TRUE}
+jbInp=asJabba(truthDf, indexCol = "stock", cv = 0.2)
 ```
 
 ## 3) Run JABBA
 
 Use the workflow wrapper for a single object containing truth, inputs, fit, and comparisons.
 
-```{r, eval=TRUE}
-wf=workflow(ssDir, runFit = TRUE, cv = 0.2, proj_years = 10)
-```
+To setup comparisons without fitting JABBA, set `runFit = FALSE`.
 
-If you only want setup/comparisons without fitting JABBA, set `runFit = FALSE`.
+```{r, run-workflow, eval=TRUE}
+wf=workflow(ssDir, runFit=TRUE, cv=0.2, proj_years=10, indexCol = "stock")
+```
 
 ## 4) Plot diagnostics
 
-### 4a) Standardized residual diagnostics table
+Section 4a builds a JARA object from workflow diagnostics and checks **standardized residuals** for non-random patterns. Section 4b calls **`plotAll(wf$comparisons)`**, which returns **four** ggplots (`historical`, `current_state`, `production`, `projections`). The chunk below **prints three** of them; use `print(plots$current_state)` for the bar chart of terminal **B/BMSY** and **F/FMSY**.
 
-```{r, eval=TRUE}
-dgs=rbind(diags(ssDir, "ss"),
-          diags(wf, "jabba"))
+### 4a) Runs tests for the trend analysis
 
-ggplot(dgs)+
-  geom_point(aes(year,residual,col=method))+
-  facet_wrap(~name,scale="free")
+```{r, jara-runs-setup, eval=TRUE}
+# Build a real JARA object (hard fail if unavailable).
+dgs=diags(wf, "jabba")
+dgs=subset(dgs, is.finite(year) & is.finite(obs))
+dgs=dgs[order(dgs$name, dgs$year), ]
+if (nrow(dgs) == 0) stop("No diagnostics rows available to build JARA input.")
+if (!requireNamespace("JARA", quietly = TRUE)) stop("Package 'JARA' is required for this chunk.")
+
+# JARA needs finite observation errors; use provided se where available.
+dgs$se_use=ifelse(is.finite(dgs$se) & dgs$se > 0, dgs$se, 0.2)
+
+idx_u=reshape(
+  dgs[, c("year", "name", "obs")],
+  idvar = "year",
+  timevar = "name",
+  direction = "wide"
+)
+idx_se=reshape(
+  dgs[, c("year", "name", "se_use")],
+  idvar = "year",
+  timevar = "name",
+  direction = "wide"
+)
+idx_u=idx_u[order(idx_u$year), ]
+idx_se=idx_se[order(idx_se$year), ]
+
+names(idx_u)=sub("^obs\\.", "", names(idx_u))
+names(idx_se)=sub("^se_use\\.", "", names(idx_se))
+names(idx_u)[1]="Yr"
+names(idx_se)[1]="Yr"
+
+sink(file = tempfile())
+on.exit(sink(), add = TRUE)
+jas=JARA::build_jara(
+  I = idx_u,
+  se = idx_se,
+  variance.weighting = "model",
+  model.type = "relative",
+  assessment = "workflow",
+  GL = 15
+)
+jas=JARA::fit_jara(jas, do.ppc = TRUE, quickmcmc = TRUE)
+
+# Local run-diagnostics helper matching qic(..., chart = "i")$data fields.
+qic=function(year, residual, chart = "i") {
+  ord=order(year, na.last = NA)
+  rr=as.numeric(residual[ord])
+  rr=rr[is.finite(rr)]
+  sgn=ifelse(rr >= 0, 1L, -1L)
+  n=length(sgn)
+  if (n < 2) {
+    return(list(data = data.frame(
+      n.crossings = NA_real_,
+      n.crossings.min = NA_real_,
+      longest.run = NA_real_,
+      longest.run.max = NA_real_
+    )))}
+  
+  n.crossings=sum(diff(sgn) != 0)
+  longest.run=max(rle(sgn)$lengths)
+  n.crossings.min=floor((n - 1) * 0.25)
+  longest.run.max=max(2, ceiling(log(n, base = 2) + 2))
+  list(data = data.frame(
+    n.crossings = n.crossings,
+    n.crossings.min = n.crossings.min,
+    longest.run = longest.run,
+    longest.run.max = longest.run.max))}
 
 ```
 
+```{r, jara-runs, fig.height=8, eval=TRUE}
+rns=ldply(list(jas), function(x) x$fits)
+runs=ddply(rns, .(scenario, name), with, qic(year, residual, chart = "i")$data)
+runs=ddply(
+  runs,
+  .(scenario, name),
+  with,
+  data.frame(
+    crossings = all(n.crossings > n.crossings.min),
+    runs = all(longest.run < longest.run.max)))
+
+runs=transform(runs, Pass = runs & crossings)
+
+ggplot(rns) +
+  geom_hline(aes(yintercept = 0), linewidth = 0.4, colour = "grey40") +
+  geom_line(aes(year, residual), position = position_dodge(width = 1), col = "grey50", linewidth = 0.5) +
+  geom_point(
+    aes(year, residual),
+    position = position_dodge(width = 1),
+    col = "grey35",
+    linewidth = 0.5,
+    data = subset(rns, residual < 0)) +
+  geom_linerange(
+    aes(year, ymin = 0, ymax = residual),
+    position = position_dodge(width = 1),
+    col = "grey35",
+    linewidth = 0.5,
+    data = subset(rns, residual < 0)) +
+  geom_point(
+    aes(year, residual),
+    position = position_dodge(width = 1),
+    col = "black",
+    linewidth = 0.5,
+    data = subset(rns, residual > 0)) +
+  geom_linerange(
+    aes(year, ymin = 0, ymax = residual),
+    position = position_dodge(width = 1),
+    col = "black",
+    linewidth = 0.5,
+    data = subset(rns, residual > 0)) +
+  facet_grid(name ~ scenario, scale = "free", space = "free_x") +
+  theme(
+        strip.text.y = element_text(angle = 0, face = "bold"),
+        strip.text.x = element_text(angle = 0),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Year") +
+  ylab("") +
+  geom_rect(
+    aes(fill = Pass),
+    xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+    alpha = 0.25,
+    data = runs
+  ) +
+  scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey35")) +
+  scale_x_continuous(breaks = pretty(rns$year, n = 8)) +
+  guides(fill = guide_legend(title = "Run test pass"))
+
+```
+
+Figure `r iFig=iFig+1; iFig`. JARA residual runs tests (shading = both runs and crossings criteria satisfied).
+
 ### 4b) Comparison plots
 
-```{r, eval=TRUE}
+```{r, comparison-plots, eval=TRUE}
+# Each ggplot must be printed explicitly so knitr records all figures (not only the last).
 plots=plotAll(wf$comparisons)
-plots$historical
-plots$current_state
-plots$production
-plots$projections
+print(plots$historical)
+print(plots$production)
+print(plots$projections)
 ```
 
 ## 5) Compare historical state
 
-```{r, eval=TRUE}
+Absolute biomass from each model (same units as in the truth table and JABBA output), not scaled to MSY.
+
+```{r, compare-historical, eval=TRUE}
 hist=wf$comparisons$historical
 ggplot(hist)+
-  geom_line(aes(year,truth_stock))+
-  geom_line(aes(year,jabba_stock))
+  geom_line(aes(year, truth_stock, color = "SS3"), linewidth = 0.9)+
+  geom_line(aes(year, jabba_stock, color = "JABBA"), linewidth = 0.9)+
+  scale_color_manual(
+    values = c("SS3" = cols_ss3_jabba["truth"], "JABBA" = cols_ss3_jabba["jabba"]),
+    name = NULL
+  ) +
+  labs(x = "Year", y = "Biomass", title = "Historical biomass: SS3 vs JABBA")
 ```
 
 ## 6) Current state relative to reference points
 
-```{r, eval=TRUE}
+Terminal year of the merged history. **B/BMSY** and **F/FMSY** here use **Schaefer** `BMSY` and `FMSY` from each **time series** (`compareCurrent()`), not SS3 report reference points. That can differ from **`curveSS` refpts** used on the SS3 production curve in `compareProduction()`.
+
+```{r, current-state-table, eval=TRUE}
 cur=wf$comparisons$current_state
-cur
+
 ```
 
-The `current_state` table includes:
+Columns in `current_state`:
 
-- `truth_B_Bmsy`, `jabba_B_Bmsy`
-- `truth_F_Fmsy`, `jabba_F_Fmsy`
+- **`truth_B_Bmsy`**, **`jabba_B_Bmsy`** — biomass relative to that series’ Schaefer **BMSY** (0.5·**K**).
+- **`truth_F_Fmsy`**, **`jabba_F_Fmsy`** — **catch/biomass** in the terminal year relative to that series’ **FMSY** (0.5·**r**).
+
+Values near **1** mean “at the Schaefer MSY reference” for that quantity; they are **not** SS3’s reported BMSY/FMSY unless the Schaefer approximation matches the assessment.
 
 ## 7) Production functions with stock trajectory
 
-The production-function comparison table is already available:
+Object `wf$comparisons$production` combines **`source = "truth"`** rows from **`FLRebuild::curveSS(ssDir)`** (equilibrium **yield vs SSB**; `r` and `K` are `NA`) with **`source = "jabba"`** rows from a **Schaefer** grid (`stock`, `production`, `r`, `K`, …). A quick look:
 
-```{r, eval=TRUE}
+```{r, production-table, eval=TRUE}
 prod=wf$comparisons$production
 head(prod)
 ```
 
-To overlay the observed stock trajectory on top of the production curves:
+Absolute-scale production functions: **x = B/BMSY** for both series (SS3 uses `curveSS` refpts or interpolated peak denominator, same as relative panels; JABBA uses Schaefer **BMSY**). **y** remains yield or empirical surplus production in model units. `ss_ref` is MSY/BMSY from `curveSS` when `prod` has `r`/`K` = `NA` for SS3.
 
-```{r, eval=TRUE}
+```{r, production-with-trajectory, eval=TRUE}
 hist=wf$comparisons$historical
+
+cs_ss=if (requireNamespace("FLRebuild", quietly = TRUE)) {
+  if (!"package:dplyr" %in% search()) suppressPackageStartupMessages(library(dplyr))
+  FLRebuild::curveSS(ssDir)
+} else NULL
+
+rp=if (!is.null(cs_ss) && is.data.frame(cs_ss$refpts) && nrow(cs_ss$refpts) > 0) cs_ss$refpts else NULL
+ss_ref=list(
+  Bmsy = if (!is.null(rp)) as.numeric(rp$bmsy[1]) else NA_real_,
+  MSY = if (!is.null(rp)) as.numeric(rp$msy[1]) else NA_real_
+)
+
+bmsy_schaefer=function(biomass, catch) {
+  ok=is.finite(biomass) & is.finite(catch) & biomass > 0
+  biomass=biomass[ok]
+  catch=catch[ok]
+  fit=lm(
+    I(
+      ((biomass[-1] - biomass[-length(biomass)]) + catch[-length(catch)]) /
+        pmax(biomass[-length(biomass)], 1e-12)
+    ) ~ biomass[-length(biomass)]
+  )
+  r=coef(fit)[1]
+  slope=coef(fit)[2]
+  K=-r / slope
+  0.5 * as.numeric(K)
+}
+
+bmsy_lookup=data.frame(
+  source = c("truth", "jabba"),
+  Bmsy = c(
+    if (is.finite(ss_ref$Bmsy)) ss_ref$Bmsy else bmsy_schaefer(hist$truth_stock, hist$truth_catch),
+    bmsy_schaefer(hist$jabba_stock, hist$jabba_catch)
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Interpolate SS3 curve; Bden on x is refpts BMSY if that matches the peak (tol), else curve peak.
+interpolate_ss3_curve_scale=function(cs_ss, ss_ref, tol = 0.05) {
+  cv=cs_ss$curve
+  cv=cv[is.finite(cv$ssb) & is.finite(cv$yield) & cv$ssb >= 0, ]
+  if (nrow(cv) < 2L) return(NULL)
+  cv=stats::aggregate(stats::as.formula("yield ~ ssb"), cv, function(z) mean(z, na.rm = TRUE))
+  cv=cv[order(cv$ssb), , drop = FALSE]
+  ssg=seq(min(cv$ssb), max(cv$ssb), length.out = 500)
+  yg=stats::approx(cv$ssb, cv$yield, xout = ssg)$y
+  im=which.max(yg)
+  Bpeak=ssg[im]
+  Mpeak=yg[im]
+  Bref=ss_ref$Bmsy
+  Mref=ss_ref$MSY
+  ref_ok=is.finite(Bref) && is.finite(Mref) && Bref > 0 && Mref > 0
+  use_ref=ref_ok && abs(Bpeak - Bref) / Bref < tol && abs(Mpeak - Mref) / Mref < tol
+  Bden=if (use_ref) Bref else Bpeak
+  Mden=if (use_ref) Mref else Mpeak
+  list(
+    ssg = ssg, yg = yg, Bden = Bden, Mden = Mden, use_ref = use_ref,
+    Bref = if (ref_ok) Bref else NA_real_, Mref = if (ref_ok) Mref else NA_real_,
+    Bpeak = Bpeak, Mpeak = Mpeak
+  )
+}
+
+ss3_curve_scale=if (!is.null(cs_ss)) interpolate_ss3_curve_scale(cs_ss, ss_ref) else NULL
+
+Bden_truth=if (!is.null(ss3_curve_scale)) ss3_curve_scale$Bden else bmsy_lookup$Bmsy[bmsy_lookup$source == "truth"]
+Mden_truth=if (!is.null(ss3_curve_scale)) {
+  ss3_curve_scale$Mden
+} else if (is.finite(ss_ref$MSY)) {
+  ss_ref$MSY
+} else {
+  pt0=prod[prod$source == "truth", , drop = FALSE]
+  if (nrow(pt0) && any(is.finite(pt0$production))) max(pt0$production, na.rm = TRUE) else NA_real_
+}
+Bmsy_j_abs=bmsy_lookup$Bmsy[bmsy_lookup$source == "jabba"]
+pj=prod[prod$source == "jabba", , drop = FALSE]
+rj=if (nrow(pj) && any(is.finite(pj$r))) stats::na.omit(pj$r)[1] else NA_real_
+Kj=if (nrow(pj) && any(is.finite(pj$K))) stats::na.omit(pj$K)[1] else NA_real_
+MSY_j=if (is.finite(rj) && is.finite(Kj)) rj * Kj / 4 else if (nrow(pj) && any(is.finite(pj$production))) max(pj$production, na.rm = TRUE) else NA_real_
+
+prod_plot=rbind(
+  transform(prod[prod$source == "truth", , drop = FALSE], x_plot = stock / Bden_truth),
+  transform(prod[prod$source == "jabba", , drop = FALSE], x_plot = stock / Bmsy_j_abs)
+)
+
+# Dimensionless: SS3 uses interpolated ssg/yg so the equilibrium curve peaks at (1, 1); JABBA uses prod grid.
+prod_truth_dim=if (!is.null(ss3_curve_scale)) {
+  sc=ss3_curve_scale
+  data.frame(source = "truth", x_plot = sc$ssg / sc$Bden, y_plot = sc$yg / sc$Mden)
+} else {
+  pt=prod[prod$source == "truth", , drop = FALSE]
+  data.frame(source = "truth", x_plot = pt$stock / Bden_truth, y_plot = pt$production / Mden_truth)
+}
+prod_plot_dim=rbind(
+  prod_truth_dim,
+  data.frame(source = "jabba", x_plot = pj$stock / Bmsy_j_abs, y_plot = pj$production / MSY_j)
+)
 
 traj_truth=transform(
   hist,
   source = "truth",
-  stock = truth_stock,
-  production = c(diff(truth_stock) + head(truth_catch, -1), NA)
+  stock = truth_ssb,
+  production = c(diff(truth_ssb) + head(truth_catch, -1), NA)
 )[, c("year", "source", "stock", "production")]
 
 traj_jabba=transform(
@@ -148,37 +443,162 @@ traj_jabba=transform(
 traj=rbind(traj_truth, traj_jabba)
 traj=traj[is.finite(traj$stock) & is.finite(traj$production), ]
 
+traj_plot=rbind(
+  transform(traj[traj$source == "truth", , drop = FALSE], x_plot = stock / Bden_truth),
+  transform(traj[traj$source == "jabba", , drop = FALSE], x_plot = stock / Bmsy_j_abs)
+)
+
+traj_plot_dim=rbind(
+  transform(traj[traj$source == "truth", , drop = FALSE], x_plot = stock / Bden_truth, y_plot = production / Mden_truth),
+  transform(traj[traj$source == "jabba", , drop = FALSE], x_plot = stock / Bmsy_j_abs, y_plot = production / MSY_j)
+)
+
+ggplot() +
+  geom_line(
+    data = prod_plot,
+    aes(x = x_plot, y = production, color = source),
+    linewidth = 1.1
+  ) +
+  geom_path(
+    data = traj_plot,
+    aes(x = x_plot, y = production, color = source),
+    alpha = 0.85,
+    linewidth = 0.8
+  ) +
+  geom_point(
+    data = traj_plot,
+    aes(x = x_plot, y = production, color = source),
+    size = 1.6,
+    alpha = 0.9
+  ) +
+  scale_color_manual(
+    values = cols_ss3_jabba,
+    labels = c("truth" = "SS3", "jabba" = "JABBA"),
+    name = NULL
+  ) +
+  labs(
+    title = "Production functions with stock trajectory (absolute scale)",
+    subtitle = "x = B/BMSY: SS3 uses curveSS refpts or interpolated peak (same BMSY as relative panels); JABBA uses Schaefer BMSY.",
+    x = "B/BMSY",
+    y = "Yield or surplus production",
+    color = "Source"
+  )
+```
+
+**Dimensionless:** same **Bden** / **Mden** as `interpolate_ss3_curve_scale()` so the SS3 equilibrium curve peaks at **(1, 1)**; trajectories use **yield/MSY** and **P/MSY** on **y**. Uses **`prod_plot_dim`** / **`traj_plot_dim`**.
+
+```{r, production-with-trajectory-relative, eval=TRUE}
+sc=ss3_curve_scale
+subt=if (is.null(sc)) {
+  "SS3: no curveSS grid; Bden/Mden from refpts or curve peak / max yield."
+} else if (isTRUE(sc$use_ref)) {
+  "SS3: B/BMSY and yield/MSY use curveSS refpts (match interpolated peak)."
+} else {
+  sprintf("SS3: B/BMSY and yield/MSY use curve peak (B=%.4g, MSY=%.4g); refpts BMSY=%.4g.", sc$Bpeak, sc$Mpeak, sc$Bref)
+}
+
+ggplot() +
+  geom_vline(xintercept = 1, linewidth = 0.5, linetype = "dotted", colour = "grey35") +
+  geom_hline(yintercept = 1, linewidth = 0.5, linetype = "dotted", colour = "grey35") +
+  geom_line(data = prod_plot_dim, aes(x = x_plot, y = y_plot, color = source), linewidth = 1.1) +
+  geom_path(data = traj_plot_dim, aes(x = x_plot, y = y_plot, color = source), alpha = 0.85, linewidth = 0.8) +
+  geom_point(data = traj_plot_dim, aes(x = x_plot, y = y_plot, color = source), size = 1.6, alpha = 0.9) +
+  scale_color_manual(
+    values = cols_ss3_jabba,
+    labels = c("truth" = "SS3", "jabba" = "JABBA"),
+    name = NULL
+  ) +
+  labs(
+    title = "Production: yield/MSY or P/MSY vs B/BMSY",
+    subtitle = subt,
+    x = "B/BMSY",
+    y = "Yield/MSY or P/MSY",
+    color = "Source"
+  )
+```
+
+Annual **catch** (yield) vs biomass with the same Schaefer **surplus-production** curve `P(B)` for reference (absolute scale):
+
+```{r, yield-vs-biomass-absolute, eval=TRUE}
+msy_df=unique(prod[, c("source", "r", "K")])
+msy_df$MSY=msy_df$r * msy_df$K / 4
+if (is.finite(ss_ref$MSY)) {
+  msy_df$MSY[msy_df$source == "truth" & !is.finite(msy_df$MSY)]=ss_ref$MSY
+}
+
+yield_traj=rbind(
+  transform(hist, source = "truth", biomass = truth_ssb, yield = truth_catch),
+  transform(hist, source = "jabba", biomass = jabba_stock, yield = jabba_catch)
+)
+yield_traj=yield_traj[is.finite(yield_traj$biomass) & is.finite(yield_traj$yield), ]
+
 ggplot() +
   geom_line(
     data = prod,
     aes(x = stock, y = production, color = source),
-    linewidth = 1
+    linewidth = 1.05,
+    linetype = "solid"
   ) +
   geom_path(
-    data = traj,
-    aes(x = stock, y = production, color = source),
-    alpha = 0.6
+    data = yield_traj,
+    aes(x = biomass, y = yield, color = source),
+    linewidth = 0.85,
+    linetype = "dashed"
   ) +
   geom_point(
-    data = traj,
-    aes(x = stock, y = production, color = source),
-    size = 1
+    data = yield_traj,
+    aes(x = biomass, y = yield, color = source),
+    size = 1.4
   ) +
-  theme_minimal() +
+  scale_color_manual(
+    values = cols_ss3_jabba,
+    labels = c("truth" = "SS3", "jabba" = "JABBA"),
+    name = NULL
+  ) +
   labs(
-    title = "Production functions with stock trajectory",
-    x = "Biomass",
-    y = "Surplus production",
-    color = NULL
+    title = "Yield (annual catch) vs SSB/biomass with production curves (absolute scale)",
+    subtitle = "Solid: SS3 equilibrium yield (curveSS) or JABBA Schaefer P(B); dashed + points: observed catch",
+    x = "SSB (SS3) or biomass (JABBA)",
+    y = "Mass per year",
+    color = "Source"
+  )
+```
+
+The same comparison in **dimensionless** form: **catch/MSY** and **yield/MSY** on **y**, with **`prod_plot_dim`** for the solid equilibrium curves.
+
+```{r, yield-vs-biomass-relative, eval=TRUE}
+prod_y=data.frame(source = prod_plot_dim$source, x_rel = prod_plot_dim$x_plot, yP_rel = prod_plot_dim$y_plot)
+yield_rel=rbind(
+  data.frame(source = "truth", x_rel = hist$truth_ssb / Bden_truth, y_rel = hist$truth_catch / Mden_truth),
+  data.frame(source = "jabba", x_rel = hist$jabba_stock / Bmsy_j_abs, y_rel = hist$jabba_catch / MSY_j)
+)
+yield_rel=yield_rel[is.finite(yield_rel$x_rel) & is.finite(yield_rel$y_rel), ]
+
+ggplot() +
+  geom_vline(xintercept = 1, linewidth = 0.5, linetype = "dotted", colour = "grey35") +
+  geom_hline(yintercept = 1, linewidth = 0.5, linetype = "dotted", colour = "grey35") +
+  geom_line(data = prod_y, aes(x = x_rel, y = yP_rel, color = source), linewidth = 1.05, linetype = "solid") +
+  geom_path(data = yield_rel, aes(x = x_rel, y = y_rel, color = source), linewidth = 0.85, linetype = "dashed") +
+  geom_point(data = yield_rel, aes(x = x_rel, y = y_rel, color = source), size = 1.4) +
+  scale_color_manual(
+    values = cols_ss3_jabba,
+    labels = c("truth" = "SS3", "jabba" = "JABBA"),
+    name = NULL
+  ) +
+  labs(
+    title = "Yield vs B/BMSY: catch/MSY and yield/MSY",
+    subtitle = "Solid: equilibrium curve; dashed + points: observed catch. Same Bden/Mden as production dimensionless panel.",
+    x = "B/BMSY",
+    y = "Catch/MSY or yield/MSY",
+    color = "Source"
   )
 ```
 
 ## 8) Projection scenarios: FMSY, Fcurrent, F0
 
-`compareProjection()` currently returns `F0` and `FFMSY`.  
-This section adds `Fcurrent` with a local helper that uses the same Schaefer form.
+**Built-in** `compareProjection()` supplies **F0** and **FFMSY** only. Below, **`Fcurrent`** is added with local helpers using the **same Schaefer** parameters as elsewhere. **Facet** = model; **line type** = fishing scenario; horizontal dotted line = **B/BMSY = 1**.
 
-```{r, eval=TRUE}
+```{r, projection-setup-and-run, eval=TRUE}
 fit_schaefer_local=function(year, biomass, catch) {
   ok=is.finite(year) & is.finite(biomass) & is.finite(catch) & biomass > 0
   year=year[ok]; biomass=biomass[ok]; catch=catch[ok]
@@ -233,24 +653,40 @@ proj_jabba=rbind(
 )
 
 proj_all=rbind(proj_truth, proj_jabba)
+proj_all$Bmsy=ifelse(proj_all$source == "truth", t_pars$Bmsy, j_pars$Bmsy)
+proj_all$stock_over_Bmsy=ifelse(
+  is.finite(proj_all$Bmsy) & proj_all$Bmsy > 0,
+  proj_all$stock / proj_all$Bmsy,
+  NA_real_
+)
 proj_all
 ```
 
 Plot:
 
-```{r, eval=TRUE}
-ggplot(proj_all, aes(year, stock, color = scenario)) +
-  geom_line(linewidth = 1) +
-  facet_wrap(~source, scales = "free_y") +
-  theme_minimal() +
-  labs(title = "Projections under F0, Fcurrent, FFMSY", y = "Biomass", color = NULL)
+```{r, projection-plot, eval=TRUE}
+ggplot(proj_all, aes(year, stock_over_Bmsy)) +
+  geom_line(aes(linetype = scenario, color = source), linewidth = 1.0) +
+  geom_point(aes(shape = scenario, color = source), size = 1.9, stroke = 0.6) +
+  geom_hline(yintercept = 1, linewidth = 0.5, linetype = "dotted", colour = "grey35") +
+  facet_grid(~source, labeller = ggplot2::labeller(source = c(truth = "SS3", jabba = "JABBA"))) +
+  scale_color_manual(values = cols_ss3_jabba, guide = "none") +
+  scale_linetype_manual(values = c("F0" = "solid", "Fcurrent" = "dashed", "FFMSY" = "dotdash")) +
+  scale_shape_manual(values = c("F0" = 16, "Fcurrent" = 17, "FFMSY" = 15)) +
+  labs(
+    title = "Projections under F0, Fcurrent, and FFMSY relative to BMSY",
+    x = "Year",
+    y = "B/BMSY",
+    linetype = "Scenario",
+    shape = "Scenario"
+  )
 ```
 
 ## 9) Backtest
 
-A simple retrospective-style backtest truncates the terminal year, reruns the workflow, and compares 1-step-ahead predictions against realized values.
+For each **terminal year**, the truth table is cut at that year, JABBA is set up on the truncated series (`runFit = FALSE` here), and terminal **stock** from SS3 vs JABBA is compared to the **realized** stock in the following year. This is a **minimal** retrospective check, not a full MSE.
 
-```{r, eval=TRUE}
+```{r, backtest-run, eval=TRUE}
 backtest_years=function(ssDir, terminal_years, runFit = FALSE, cv = 0.2) {
   out=vector("list", length(terminal_years))
   names(out)=terminal_years
@@ -263,7 +699,7 @@ backtest_years=function(ssDir, terminal_years, runFit = FALSE, cv = 0.2) {
     tst=base_truth[base_truth$year == (y_end + 1), , drop = FALSE]
     if (nrow(tst) == 0) next
 
-    jin=sstruth::asJabba(trn, indexCol = "ssb", cv = cv)
+    jin=sstruth::asJabba(trn, indexCol = "stock", cv = cv)
     jfit=sstruth::fitJabba(jin, run = runFit)
 
     cur=compareCurrent(trn, jfit, jin)
@@ -286,4 +722,4 @@ bt
 
 ---
 
-This workflow is designed so each component can be used standalone (`readTruth`, `asJabba`, `fitJabba`, `diags`, `compare*`, `plot*`) or through `workflow()` for a single end-to-end object.
+**Using pieces on their own:** `readTruth`, `asTruth`, `asJabba`, `fitJabba`, `diags`, `compare*`, and `plot*` each work independently; `workflow()` bundles truth, inputs, optional fit, and `compareAll()` in one list. SS3 **production** in `compareProduction()` comes from **`FLRebuild::curveSS()`** when `ssDir` is set (as in `workflow()`); JABBA’s curve is still **Schaefer** from the series. Custom plots below may use additional Schaefer overlays; the **index** choice (`stock` here) and **`runFit`** still matter for JABBA.

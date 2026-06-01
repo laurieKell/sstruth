@@ -237,3 +237,87 @@ setMethod("diags", signature(object = "data.frame", method = "character"),
           })
 
 
+#' Plot residual time series with ggplot2
+#'
+#' @param x Diagnostics data frame (typically from `diags()`).
+#' @param by Optional grouping column for facets.
+#' @return ggplot object.
+#' @export
+plotResiduals<-function(x, by = "name") {
+  if (!is.data.frame(x) || nrow(x) == 0) stop("x must be a non-empty diagnostics data frame.")
+  req=c("year", "residual")
+  if (!all(req %in% names(x))) stop("x must contain year and residual columns.")
+
+  p=ggplot2::ggplot(x, ggplot2::aes(x = year, y = residual)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+    ggplot2::geom_line(linewidth = 0.6, alpha = 0.8) +
+    ggplot2::geom_point(size = 1.5, alpha = 0.8) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x = "Year", y = "Residual", title = "Residual diagnostics")
+
+  if (!is.null(by) && by %in% names(x)) {
+    p=p + ggplot2::facet_wrap(stats::as.formula(paste("~", by)), scales = "free_y")
+  }
+  p
+}
+
+#' Plot standardized residual time series with ggplot2
+#'
+#' @param x Diagnostics data frame (typically from `diags()`).
+#' @param by Optional grouping column for facets.
+#' @return ggplot object.
+#' @export
+plotStdResiduals<-function(x, by = "name") {
+  if (!is.data.frame(x) || nrow(x) == 0) stop("x must be a non-empty diagnostics data frame.")
+  if (!"std_residual" %in% names(x)) x=diagStandard(x)
+  req=c("year", "std_residual")
+  if (!all(req %in% names(x))) stop("x must contain year and std_residual columns.")
+
+  p=ggplot2::ggplot(x, ggplot2::aes(x = year, y = std_residual)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+    ggplot2::geom_hline(yintercept = c(-2, 2), linetype = 3, alpha = 0.7) +
+    ggplot2::geom_line(linewidth = 0.6, alpha = 0.8) +
+    ggplot2::geom_point(size = 1.5, alpha = 0.8) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x = "Year", y = "Standardized residual", title = "Standardized residual diagnostics")
+
+  if (!is.null(by) && by %in% names(x)) {
+    p=p + ggplot2::facet_wrap(stats::as.formula(paste("~", by)), scales = "free_y")
+  }
+  p
+}
+
+#' Plot runs-style diagnostics with ggplot2
+#'
+#' @param x Diagnostics data frame (typically from `diags()`).
+#' @param by Optional grouping column for facets.
+#' @return ggplot object.
+#' @export
+plotRunTest<-function(x, by = "name") {
+  if (!is.data.frame(x) || nrow(x) == 0) stop("x must be a non-empty diagnostics data frame.")
+  req=c("year", "residual")
+  if (!all(req %in% names(x))) stop("x must contain year and residual columns.")
+
+  grp=if (!is.null(by) && by %in% names(x)) x[[by]] else factor("all")
+  key=interaction(grp, drop = TRUE, lex.order = TRUE)
+
+  x$runScore=NA_real_
+  for (lev in levels(key)) {
+    ii=which(key == lev)
+    ord=ii[order(x$year[ii], na.last = TRUE)]
+    sgn=ifelse(x$residual[ord] >= 0, 1, -1)
+    x$runScore[ord]=cumsum(sgn)
+  }
+
+  p=ggplot2::ggplot(x, ggplot2::aes(x = year, y = runScore)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+    ggplot2::geom_line(linewidth = 0.7) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x = "Year", y = "Cumulative sign score", title = "Run-test style residual plot")
+
+  if (!is.null(by) && by %in% names(x)) {
+    p=p + ggplot2::facet_wrap(stats::as.formula(paste("~", by)), scales = "free_y")
+  }
+  p
+}
+

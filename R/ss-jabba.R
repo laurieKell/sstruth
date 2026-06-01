@@ -1,5 +1,5 @@
 library(methods)
-utils::globalVariables(c("year", "value", "series", "metric", "stock", "B_Bmsy", "group"))
+utils::globalVariables(c("year", "value", "series", "metric", "stock", "B_Bmsy", "source", "scenario"))
 
 #' Read SS3 truth object via ss3om
 #'
@@ -29,19 +29,20 @@ setMethod("asTruth", signature(x = "list"), function(x, ...) {
   ts=x$tseries %||% x$timeseries
   if (is.null(ts) || !is.data.frame(ts)) stop("Could not find time-series data in input object.")
 
-  yearCol=resolveCol(ts, c("year", "yr"))
-  catchCol=resolveCol(ts, c("yield", "catch", "totcatch"))
+  yearCol =resolveCol(ts, c("year",    "yr"))
+  catchCol=resolveCol(ts, c("yield",   "catch", "totcatch"))
   stockCol=resolveCol(ts, c("biomass", "stock"))
-  ssbCol=resolveCol(ts, c("ssb", "spawnbio"))
+  ssbCol  =resolveCol(ts, c("ssb",     "spawnbio"))
 
   req=c(yearCol, catchCol, stockCol, ssbCol)
   if (any(is.na(req))) stop("Missing required truth columns in time-series object.")
 
   out=data.frame(
-    year = as.numeric(ts[[yearCol]]),
+    year  = .yearAsNumeric(ts[[yearCol]]),
     catch = as.numeric(ts[[catchCol]]),
     stock = as.numeric(ts[[stockCol]]),
-    ssb = as.numeric(ts[[ssbCol]]),
+    ssb   = as.numeric(ts[[ssbCol]]),
+    eb    = as.numeric(ts[[ssbCol]]),
     stringsAsFactors = FALSE
   )
   out[is.finite(out$year), , drop = FALSE]
@@ -72,7 +73,7 @@ setMethod("asTruth", signature(x = "ANY"), function(x, ...) {
 
     catchDf=flqYearSum(catchObj)
     stockDf=flqYearSum(stockObj)
-    ssbDf=flqYearSum(ssbObj)
+    ssbDf  =flqYearSum(ssbObj)
 
     if (is.null(catchDf) || is.null(stockDf)) {
       stop("Could not extract yearly catch/stock from FLStock object.")
@@ -119,6 +120,7 @@ setMethod("asJabba", signature(x = "data.frame"), function(x, indexCol = "ssb", 
   if (!all(c("year", "catch") %in% names(x))) stop("Truth data must contain year and catch.")
   if (!indexCol %in% names(x)) stop("indexCol not found in truth data.")
 
+  x$year=.yearAsNumeric(x$year)
   keep=is.finite(x$year) & is.finite(x$catch) & is.finite(x[[indexCol]])
   xx=x[keep, , drop = FALSE]
 
@@ -232,6 +234,53 @@ setMethod("asJabba", signature(x = "character"),
   out
 }
 
+# Calendar years as numeric (factors become calendar years, not level codes)
+.yearAsNumeric<-function(x) {
+  if (is.null(x)) return(as.numeric(x))
+  if (is.factor(x)) return(suppressWarnings(as.numeric(as.character(x))))
+  if (is.character(x)) return(suppressWarnings(as.numeric(x)))
+  as.numeric(x)
+}
+
+# SS3 equilibrium yield vs SSB from local curveSS (not a fitted Schaefer)
+.truthProductionFromCurveSS<-function(ssDir) {
+  if (!is.character(ssDir) || length(ssDir) != 1L || !nzchar(ssDir) || !dir.exists(ssDir)) {
+    stop("ssDir must be a single existing SS3 run directory.", call. = FALSE)
+  }
+  cs=curveSS(ssDir)
+  cv=cs$curve
+  if (!is.data.frame(cv) || nrow(cv) == 0) {
+    stop("curveSS() returned an empty $curve.", call. = FALSE)
+  }
+  if (!all(c("ssb", "yield") %in% names(cv))) {
+    stop("curveSS()$curve must contain columns 'ssb' and 'yield'.", call. = FALSE)
+  }
+  ok=is.finite(cv$ssb) & is.finite(cv$yield) & cv$ssb >= 0
+  cv=cv[ok, , drop = FALSE]
+  if (nrow(cv) == 0) stop("No finite rows in curveSS()$curve after filtering.", call. = FALSE)
+  cv=cv[order(cv$ssb), , drop = FALSE]
+  cv=stats::aggregate(stats::as.formula("yield ~ ssb"), cv, function(z) mean(z, na.rm = TRUE))
+  cv=cv[order(cv$ssb), , drop = FALSE]
+  rp=cs$refpts
+  Bmsy=NA_real_
+  MSY=NA_real_
+  if (is.data.frame(rp) && nrow(rp) > 0) {
+    if ("bmsy" %in% names(rp)) Bmsy=as.numeric(rp$bmsy[1])
+    if ("msy" %in% names(rp)) MSY=as.numeric(rp$msy[1])
+  }
+  Fmsy=if (is.finite(Bmsy) && Bmsy > 0 && is.finite(MSY)) MSY / Bmsy else NA_real_
+  data.frame(
+    source = "truth",
+    stock = as.numeric(cv$ssb),
+    production = as.numeric(cv$yield),
+    r = NA_real_,
+    K = NA_real_,
+    Bmsy = Bmsy,
+    Fmsy = Fmsy,
+    stringsAsFactors = FALSE
+  )
+}
+
 .fitSchaefer<-function(year, biomass, catch) {
   yy=as.numeric(year)
   bb=as.numeric(biomass)
@@ -322,7 +371,7 @@ setMethod("asJabba", signature(x = "character"),
   if (is.null(fit)) {
     if (!is.null(jabba_input)) {
       return(data.frame(
-        year = as.numeric(jabba_input$yrs %||% seq_along(jabba_input$cpue)),
+        year = .yearAsNumeric(jabba_input$yrs %||% seq_along(jabba_input$cpue)),
         catch = as.numeric(jabba_input$catch),
         stock = as.numeric(jabba_input$cpue),
         stringsAsFactors = FALSE
@@ -348,7 +397,7 @@ setMethod("asJabba", signature(x = "character"),
       return(NULL)
     }
 
-    yy=as.numeric(years %||% dn[[1]] %||% seq_along(stock))
+    yy=.yearAsNumeric(years %||% dn[[1]] %||% seq_along(stock))
     cc=as.numeric(catch %||% rep(NA_real_, length(stock)))
     keep=is.finite(yy) & is.finite(stock)
     if (sum(keep) == 0) return(NULL)
@@ -382,7 +431,8 @@ setMethod("asJabba", signature(x = "character"),
   }
 
   if (!is.null(ts)) {
-    year=.colOrNA(ts, c("year", "yr"))
+    yc=resolveCol(ts, c("year", "yr"))
+    year=if (is.na(yc)) rep(NA_real_, nrow(ts)) else .yearAsNumeric(ts[[yc]])
     catch=.colOrNA(ts, c("catch", "yield", "C", "ct"))
     stock=.colOrNA(ts, c("biomass", "B", "stock", "Bmed", "Bmean", "cpue", "index"))
     keep=is.finite(year) & is.finite(catch) & is.finite(stock)
@@ -392,7 +442,7 @@ setMethod("asJabba", signature(x = "character"),
 
   if (!is.null(jabba_input)) {
     out=data.frame(
-      year = as.numeric(jabba_input$yrs %||% seq_along(jabba_input$cpue)),
+      year = .yearAsNumeric(jabba_input$yrs %||% seq_along(jabba_input$cpue)),
       catch = as.numeric(jabba_input$catch),
       stock = as.numeric(jabba_input$cpue),
       stringsAsFactors = FALSE
@@ -413,6 +463,8 @@ setMethod("asJabba", signature(x = "character"),
 #' @param proj_years Number of projection years.
 #' @param ... Additional args passed to `fitJabba()`.
 #' @return List with truth data, JABBA inputs/fit, and comparison tables.
+#' @details For `compareProduction()`, the SS3 side uses [curveSS()] on `x`
+#'   when `x` is the SS3 directory.
 #' @export
 workflow<-function(
   x,
@@ -427,7 +479,7 @@ workflow<-function(
   truthDf=asTruth(truthObj)
   jabbaIn=asJabba(truthDf, indexCol = indexCol, cv = cv)
   jabbaFit=fitJabba(jabbaIn, run = runFit, fitFun = fitFun, ...)
-  cmp=compareAll(truthDf, jabbaFit, jabbaIn, proj_years = proj_years)
+  cmp=compareAll(truthDf, jabbaFit, jabbaIn, proj_years = proj_years, ssDir = x)
   out=list(
     truth = truthObj,
     truth_df = truthDf,
@@ -452,7 +504,7 @@ compareHistorical<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
   if (!all(req %in% names(truthDf))) stop("truthDf must contain year, catch, and stock.")
   jdf=.fromJabbaFit(jabbaFit, jabbaInput)
   tdf=data.frame(
-    year = as.numeric(truthDf$year),
+    year = .yearAsNumeric(truthDf$year),
     truth_catch = as.numeric(truthDf$catch),
     truth_stock = as.numeric(truthDf$stock),
     truth_ssb = as.numeric(truthDf$ssb %||% NA_real_),
@@ -508,37 +560,72 @@ compareCurrent<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL) {
 #' @param truthDf Data frame from `asTruth()`.
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
-#' @param n Number of biomass grid points.
+#' @param n Number of biomass grid points for the **JABBA** Schaefer curve (ignored for SS3
+#'   when `ssDir` is set).
+#' @param ssDir Optional SS3 run directory. If non-`NULL`, the SS3 curve is **not** fitted:
+#'   it is read from [curveSS()] as equilibrium **yield** vs **SSB** (columns
+#'   `stock` = SSB, `production` = yield). If `NULL`, SS3 is approximated with a
+#'   Schaefer fit to the truth time series (same as JABBA side).
 #' @return Data frame with production curves for both sources.
 #' @export
-compareProduction<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50) {
+compareProduction<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, n = 50, ssDir = NULL) {
   hist=compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput)
   tPars=.fitSchaefer(hist$year, hist$truth_stock, hist$truth_catch)
   jPars=.fitSchaefer(hist$year, hist$jabba_stock, hist$jabba_catch)
 
-  tGrid=if (is.finite(tPars$K)) seq(0, tPars$K, length.out = as.integer(n)) else numeric()
   jGrid=if (is.finite(jPars$K)) seq(0, jPars$K, length.out = as.integer(n)) else numeric()
 
-  outT=data.frame(
-    source = "truth",
-    stock = tGrid,
-    production = tPars$r * tGrid * (1 - tGrid / tPars$K),
-    r = tPars$r,
-    K = tPars$K,
-    Bmsy = tPars$Bmsy,
-    Fmsy = tPars$Fmsy,
-    stringsAsFactors = FALSE
-  )
-  outJ=data.frame(
-    source = "jabba",
-    stock = jGrid,
-    production = jPars$r * jGrid * (1 - jGrid / jPars$K),
-    r = jPars$r,
-    K = jPars$K,
-    Bmsy = jPars$Bmsy,
-    Fmsy = jPars$Fmsy,
-    stringsAsFactors = FALSE
-  )
+  if (!is.null(ssDir)) {
+    outT=.truthProductionFromCurveSS(ssDir)
+  } else {
+    tGrid=if (is.finite(tPars$K)) seq(0, tPars$K, length.out = as.integer(n)) else numeric()
+    if (length(tGrid) > 0 && is.finite(tPars$r) && is.finite(tPars$K)) {
+      outT=data.frame(
+        source = "truth",
+        stock = tGrid,
+        production = tPars$r * tGrid * (1 - tGrid / tPars$K),
+        r = tPars$r,
+        K = tPars$K,
+        Bmsy = tPars$Bmsy,
+        Fmsy = tPars$Fmsy,
+        stringsAsFactors = FALSE
+      )
+    } else {
+      outT=data.frame(
+        source = character(),
+        stock = numeric(),
+        production = numeric(),
+        r = numeric(),
+        K = numeric(),
+        Bmsy = numeric(),
+        Fmsy = numeric(),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  if (length(jGrid) > 0 && is.finite(jPars$r) && is.finite(jPars$K)) {
+    outJ=data.frame(
+      source = "jabba",
+      stock = jGrid,
+      production = jPars$r * jGrid * (1 - jGrid / jPars$K),
+      r = jPars$r,
+      K = jPars$K,
+      Bmsy = jPars$Bmsy,
+      Fmsy = jPars$Fmsy,
+      stringsAsFactors = FALSE
+    )
+  } else {
+    outJ=data.frame(
+      source = character(),
+      stock = numeric(),
+      production = numeric(),
+      r = numeric(),
+      K = numeric(),
+      Bmsy = numeric(),
+      Fmsy = numeric(),
+      stringsAsFactors = FALSE
+    )
+  }
   rbind(outT, outJ)
 }
 
@@ -599,18 +686,25 @@ compareProjection<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, years =
 #' @param jabbaFit JABBA fit object or fit specification.
 #' @param jabbaInput JABBA input list.
 #' @param proj_years Number of projection years.
+#' @param ssDir Optional SS3 directory passed to [compareProduction()] for the equilibrium
+#'   curve via [curveSS()].
 #' @return Named list with historical, current, production, and projections.
 #' @export
-compareAll<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10) {
+compareAll<-function(truthDf, jabbaFit = NULL, jabbaInput = NULL, proj_years = 10, ssDir = NULL) {
   list(
     historical    = compareHistorical(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
     current_state = compareCurrent(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
-    production = compareProduction(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput),
+    production = compareProduction(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput, ssDir = ssDir),
     projections = compareProjection(truthDf, jabbaFit = jabbaFit, jabbaInput = jabbaInput, years = proj_years)
   )
 }
 
 # Plot helpers -------------------------------------------------------------
+
+# Colours for SS3 (source = truth) vs JABBA in ggplot outputs
+.ss3_jabba_colors<-function() {
+  c("truth" = "#0072B2", "jabba" = "#D55E00")
+}
 
 #' Plot historical trend comparison using ggplot2
 #'
@@ -636,6 +730,15 @@ plotHistorical<-function(historical) {
 
   ggplot2::ggplot(dat, ggplot2::aes_string(x = "year", y = "value", color = "series")) +
     ggplot2::geom_line(linewidth = 1) +
+    ggplot2::scale_color_manual(
+      values = c(
+        "Truth stock (rel)" = "#0072B2",
+        "JABBA stock (rel)" = "#D55E00",
+        "Truth catch (rel)" = "#56B4E9",
+        "JABBA catch (rel)" = "#E69F00"
+      ),
+      name = NULL
+    ) +
     ggplot2::theme_minimal() +
     ggplot2::labs(
       title = "Historical trend: SS truth vs JABBA",
@@ -665,6 +768,7 @@ plotCurrent<-function(current_state) {
   ggplot2::ggplot(dat, ggplot2::aes_string(x = "metric", y = "value", fill = "source")) +
     ggplot2::geom_col(position = "dodge") +
     ggplot2::geom_hline(yintercept = 1, linetype = 2) +
+    ggplot2::scale_fill_manual(values = c("Truth" = "#0072B2", "JABBA" = "#D55E00"), name = NULL) +
     ggplot2::theme_minimal() +
     ggplot2::labs(
       title = paste0("Current state in ", as.integer(cs$year[1])),
@@ -683,14 +787,26 @@ plotProduction<-function(production) {
   if (!is.data.frame(production) || nrow(production) == 0) stop("production must be a non-empty data frame.")
 
   dat=production[is.finite(production$stock) & is.finite(production$production), , drop = FALSE]
+  if (nrow(dat) == 0) {
+    stop(
+      "No rows to plot: compareProduction() produced no finite stock/production. ",
+      "Common causes: Schaefer fit failed (need r, K from catch/biomass), or `year` in ",
+      "truth data was a factor (use calendar years, not factor codes). See ?compareProduction."
+    )
+  }
   ggplot2::ggplot(dat, ggplot2::aes_string(x = "stock", y = "production", color = "source")) +
     ggplot2::geom_line(linewidth = 1) +
     ggplot2::geom_hline(yintercept = 0, linetype = 3) +
+    ggplot2::scale_color_manual(
+      values = .ss3_jabba_colors(),
+      labels = c("truth" = "SS3", "jabba" = "JABBA"),
+      name = NULL
+    ) +
     ggplot2::theme_minimal() +
     ggplot2::labs(
       title = "Production functions: SS truth vs JABBA",
-      x = "Biomass",
-      y = "Surplus production",
+      x = "Stock",
+      y = "Yield / production",
       color = NULL
     )
 }
@@ -704,17 +820,22 @@ plotProjection<-function(projections) {
   if (!is.data.frame(projections) || nrow(projections) == 0) stop("projections must be a non-empty data frame.")
 
   dat=projections[is.finite(projections$year) & is.finite(projections$B_Bmsy), , drop = FALSE]
-  dat$group=paste(dat$source, dat$scenario, sep = " - ")
 
-  ggplot2::ggplot(dat, ggplot2::aes_string(x = "year", y = "B_Bmsy", color = "group")) +
+  ggplot2::ggplot(dat, ggplot2::aes_string(x = "year", y = "B_Bmsy", color = "source", linetype = "scenario")) +
     ggplot2::geom_line(linewidth = 1) +
     ggplot2::geom_hline(yintercept = 1, linetype = 2) +
+    ggplot2::scale_color_manual(
+      values = .ss3_jabba_colors(),
+      labels = c("truth" = "SS3", "jabba" = "JABBA"),
+      name = NULL
+    ) +
     ggplot2::theme_minimal() +
     ggplot2::labs(
       title = "Projected biomass trajectories under F=0 and F=FMSY",
       x = "Year",
       y = "B/BMSY",
-      color = NULL
+      color = NULL,
+      linetype = "Scenario"
     )
 }
 

@@ -25,15 +25,38 @@ editor_options:
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(
-  echo       = TRUE,
+  echo       = FALSE,
   warning    = FALSE,
   message    = FALSE,
   cache      = TRUE,
   cache.path = file.path("cache", paste0(tools::file_path_sans_ext(basename(knitr::current_input())), "/")),
   dev        = "png",
   dpi        = 300,
-  fig.width  = 10,
-  fig.height = 7)
+  fig.width  = 10.5,
+  fig.height = 6.5,
+  fig.align  = "center",
+  out.width  = "92%")
+
+# Allow direct knitting without YAML params.
+if (!exists("params")) {
+  params=list(
+    ssDir = "C:/active/flr/sstruth/data/ss3/herring",
+    version = "3.30",
+    run_preflight = FALSE,
+    run_pipeline = FALSE,
+    run_batch_example = FALSE
+  )
+}
+
+# Global plot styling for cleaner report output.
+ggplot2::theme_set(
+  ggplot2::theme_bw(base_size = 12) +
+    ggplot2::theme(
+      legend.position = "bottom",
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(face = "bold")
+    )
+)
 ```
 
 
@@ -58,7 +81,7 @@ source("C:/active/flr/diags/R/diags-funcs.R")
 ```
 
 
-```{r}
+```{r, ssdir-example}
 ssDir="C:/active/flr/sstruth/data/ss3/herring"
 ```
 
@@ -291,7 +314,7 @@ modCatch<-function(dat, catch_cv = 0.02, smooth_method =  c("ma","loess", "none"
   list(dat = dat, audit = audit)
 }
 
-runSS<-function(dir, nohess=TRUE) {
+runSS<-function(dir, ss3_exe = "ss3", nohess=TRUE) {
     old   =getwd(); on.exit(setwd(old), add = TRUE); setwd(dir)
     
     cmd   =paste(shQuote(ss3_exe), if (nohess) "-nohess", "")
@@ -329,12 +352,12 @@ runAudit<-function(ssDir,
   if (run_base) {
     st0=st; st0$N_bootstraps=0
     r4ss::SS_writestarter(st0, dir = ssDir, overwrite = TRUE, verbose = FALSE)
-    runSS(ssDir, nohess = TRUE)}
+    runSS(ssDir, ss3_exe = ss3_exe, nohess = TRUE)}
   
   if (run_expval) {
     st1=st; st1$N_bootstraps=2
     r4ss::SS_writestarter(st1, dir = ssDir, overwrite = TRUE, verbose = FALSE)
-    runSS(ssDir, nohess = TRUE)}
+    runSS(ssDir, ss3_exe = ss3_exe, nohess = TRUE)}
   
   expval_file=file.path(ssDir, "data_expval.ss")
   if (!file.exists(expval_file)) {
@@ -353,7 +376,7 @@ runAudit<-function(ssDir,
   r4ss::SS_writedat(datlist = dat, outfile = out_dat, version = version, overwrite = TRUE, verbose = FALSE)
   st2=st; st2$datfile=basename(out_dat); st2$N_bootstraps=0
   r4ss::SS_writestarter(st2, dir = ssDir, overwrite = TRUE, verbose = FALSE)
-  if (run_final) runSS(ssDir, nohess = final_nohess)
+  if (run_final) runSS(ssDir, ss3_exe = ss3_exe, nohess = final_nohess)
   audit_dir=file.path(ssDir, "audit")
   if (!dir.exists(audit_dir)) dir.create(audit_dir, recursive = TRUE)
   aud_main=rbind.fill(
@@ -391,7 +414,7 @@ runAudit<-function(ssDir,
 # Batch wrapper with preflight gating
 
 ```{r batch-functions}
-runOne<-function(task, task_id) {
+runOne<-function(task, task_id, default_args, preflight, skip_on_preflight_flags, pipeline_fun) {
     stock=task$stock %||% paste0("stock", task_id)
     scenario=task$scenario %||% paste0("scenario", task_id)
     ssDir=normalizePath(task$ssDir, winslash = "/", mustWork = TRUE)
@@ -438,7 +461,18 @@ runBatch<-function(tasks, workers = NULL, parallel = TRUE, future_seed = TRUE, p
   } else future::plan(future::sequential)
 
   idx=seq_along(tasks)
-  res=future.apply::future_lapply(idx, function(i) runOne(tasks[[i]], i), future.seed = future_seed)
+  res=future.apply::future_lapply(
+    idx,
+    function(i) runOne(
+      tasks[[i]],
+      i,
+      default_args = default_args,
+      preflight = preflight,
+      skip_on_preflight_flags = skip_on_preflight_flags,
+      pipeline_fun = pipeline_fun
+    ),
+    future.seed = future_seed
+  )
   batch_summary=do.call(rbind.fill, lapply(res, `[[`, "summary"))
   utils::write.csv(batch_summary, file.path(batch_audit_dir, "batch_summary.csv"), row.names = FALSE)
   audit_rows=lapply(res, function(x) {
@@ -573,7 +607,6 @@ copy_model_tree<-function(src_dir, dst_dir, overwrite = FALSE) {
   }
   dir.create(dst_dir, recursive = TRUE, showWarnings = FALSE)
   files=list.files(src_dir, recursive = TRUE, all.files = TRUE, no.. = TRUE, full.names = TRUE)
-  rel=substring(files, nchar(src_dir) + 2)
   dirs=files[file.info(files)$isdir]
   if (length(dirs) > 0) {
     rel_dirs=substring(dirs, nchar(src_dir) + 2)
@@ -724,7 +757,7 @@ for (i in seq_len(nrow(reports))) {
     envir = new.env())}
 ```
 
-```{r}
+```{r, acf-scratch-compare, eval=FALSE}
 f0=ss3om::readFLSss3("C:/active/flr/sstruth/data/ss3/herring")
 f1=ss3om::readFLSss3("C:/active/flr/sstruth/Rmd/scenario_runs/herring/base_lowerr")
 f2=ss3om::readFLSss3("C:/active/flr/sstruth/Rmd/scenario_runs/herring/keep_recent_catch")
