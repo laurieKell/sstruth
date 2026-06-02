@@ -179,6 +179,7 @@ curveSsTerminalRows <- function(ts) {
 #' @param for_plots Include columns needed for PE diagnostic figures; may call
 #'   \code{FLRebuild::curveSS} when enrichment is needed.
 #' @param cache Read cached \code{ss_output.rds} per run.
+#' @param maxY Passed to \code{curveSS()} (MSY triangle upper yield; default 1.5).
 #' @param parallel,workers Parallel \code{curveSS} calls.
 #' @param ... Passed to \code{curveSS()} / \code{ssRead()}.
 #' @return Named list with combined \code{tseries}, \code{curve}, \code{refpts},
@@ -191,6 +192,7 @@ ssCurve <- function(
   col = "run",
   for_plots = FALSE,
   cache = TRUE,
+  maxY = 1.5,
   parallel = TRUE,
   workers = NULL,
   ...
@@ -206,7 +208,7 @@ ssCurve <- function(
     path <- runs$path[[i]]
     message("[ssCurve] ", id)
     out <- tryCatch(
-      curveSS(path, cache = cache, ...),
+      curveSS(path, cache = cache, maxY = maxY, ...),
       error = function(e) {
         message("[ssCurve] ", id, ": ", conditionMessage(e))
         NULL

@@ -13,13 +13,15 @@
 #'
 #' @param x SS3 run directory, \code{ss_output.rds} path, or \code{SS_output} list.
 #' @param cache Read or write \code{ss_output.rds} when \code{x} is a directory.
+#' @param maxY Multiplier for the upper yield corner of the MSY reference
+#'   triangle, as in \code{FLRebuild::curveSS}: \code{signif(max(yield) * maxY, 1)}.
 #' @param ... Passed to \code{ssRead()} when reading \code{Report.sso}.
 #' @return List with elements \code{tseries}, \code{curve}, \code{refpts}, and
 #'   \code{triangle} (an MSY reference polygon in \code{x}/\code{y} space).
 #' @export
-curveSS <- function(x, cache = TRUE, ...) {
+curveSS <- function(x, cache = TRUE, maxY = 1.5, ...) {
   rep <- .readSsOutput(x, cache = cache, ...)
-  .curveSSFromRep(rep)
+  .curveSSFromRep(rep, maxY = maxY)
 }
 
 #' Read \code{SS_output} for curveSS (uses \code{ssReadOutput} when installed).
@@ -259,7 +261,7 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   yearly
 }
 
-.curveSSFromRep <- function(rep) {
+.curveSSFromRep <- function(rep, maxY = 1.5) {
   if (!requireNamespace("r4ss", quietly = TRUE)) {
     stop("Package 'r4ss' is required.", call. = FALSE)
   }
@@ -330,7 +332,7 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
 
   refpts <- .curveSSRefpts(curve, rep$derived_quants)
 
-  triangle <- .curveSSTriangle(curve, refpts)
+  triangle <- .curveSSTriangle(curve, refpts, tseries = tseries, maxY = maxY)
 
   list(tseries = tseries, curve = curve, refpts = refpts, triangle = triangle)
 }
@@ -378,8 +380,9 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   )
 }
 
+#' MSY reference triangle (same geometry as \code{FLRebuild::curveSS}).
 #' @noRd
-.curveSSTriangle <- function(curve, refpts) {
+.curveSSTriangle <- function(curve, refpts, tseries = NULL, maxY = 1.5) {
   if (is.null(curve) || !NROW(curve) || is.null(refpts) || !NROW(refpts)) {
     return(NULL)
   }
@@ -389,7 +392,10 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   bmsy <- as.numeric(refpts$bmsy[1L])
   msy <- as.numeric(refpts$msy[1L])
   if (!is.finite(msy) || msy <= 0) {
-    msy <- suppressWarnings(max(curve$yield, na.rm = TRUE))
+    idx <- which.max(curve$yield)
+    if (length(idx) && is.finite(curve$yield[idx])) {
+      msy <- as.numeric(curve$yield[idx])
+    }
   }
   if (!is.finite(bmsy) || bmsy <= 0) {
     idx <- which.max(curve$yield)
@@ -400,14 +406,21 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   if (!is.finite(bmsy) || !is.finite(msy) || bmsy <= 0 || msy <= 0) {
     return(NULL)
   }
-  y_cap <- suppressWarnings(max(c(curve$yield, msy), na.rm = TRUE))
-  if (!is.finite(y_cap) || y_cap <= msy) {
-    y_cap <- msy * 1.1
+  if (!is.finite(maxY) || maxY <= 0) {
+    maxY <- 1.5
   }
-  x_cap <- bmsy * (y_cap / msy)
+  yields <- c(curve$yield, msy)
+  if (!is.null(tseries) && is.data.frame(tseries) && "yield" %in% names(tseries)) {
+    yields <- c(yields, tseries$yield)
+  }
+  y_top <- signif(suppressWarnings(max(yields, na.rm = TRUE)) * maxY, 1)
+  if (!is.finite(y_top) || y_top <= msy) {
+    y_top <- signif(msy * maxY, 1)
+  }
+  x_top <- bmsy * y_top / msy
   data.frame(
-    x = c(bmsy, bmsy, x_cap, bmsy),
-    y = c(msy, y_cap, y_cap, msy),
+    x = c(bmsy, bmsy, x_top, bmsy),
+    y = c(msy, y_top, y_top, msy),
     stringsAsFactors = FALSE
   )
 }
