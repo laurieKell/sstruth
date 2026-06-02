@@ -173,6 +173,54 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   c(state[-1] - state[-n] + catch[-n], NA_real_)
 }
 
+#' Equilibrium yield at observed SSB (natural spline on \code{equil_yield}), as in FLRebuild.
+#' @noRd
+.curveSSPfAtSsb <- function(ssb, curve) {
+  if (!is.data.frame(curve) || !all(c("ssb", "yield") %in% names(curve))) {
+    return(rep(NA_real_, length(ssb)))
+  }
+  ok <- is.finite(curve$ssb) & is.finite(curve$yield)
+  x <- curve$ssb[ok]
+  y <- curve$yield[ok]
+  if (length(x) < 2L) {
+    return(rep(NA_real_, length(ssb)))
+  }
+  ord <- order(x)
+  x <- x[ord]
+  y <- y[ord]
+  ux <- unique(x)
+  if (length(ux) < 2L) {
+    return(rep(NA_real_, length(ssb)))
+  }
+  uy <- vapply(ux, function(xi) mean(y[x == xi], na.rm = TRUE), numeric(1))
+  fn <- stats::splinefun(ux, uy, method = "natural")
+  out <- as.numeric(fn(ssb))
+  out[!is.finite(ssb)] <- NA_real_
+  out
+}
+
+#' Log and relative process error from SSB, catch, and production-function yield.
+#' Matches \code{FLRebuild::curveSS} (\code{pe}, \code{pe2}).
+#' @noRd
+.curveSSProcessError <- function(ssb, yield, pf) {
+  n <- length(ssb)
+  pe <- rep(NA_real_, n)
+  pe2 <- rep(NA_real_, n)
+  pe_diff <- rep(NA_real_, n)
+  if (n < 2L) {
+    return(list(pe = pe, pe2 = pe2, pe_diff = pe_diff))
+  }
+  pred <- ssb[-n] - yield[-n] + pf[-n]
+  obs <- ssb[-1]
+  ok <- is.finite(obs) & is.finite(pred) & pred > 0 & obs > 0
+  if (any(ok)) {
+    pe[2:n][ok] <- log(obs[ok] / pred[ok])
+    pe2[2:n][ok] <- (pred[ok] - obs[ok]) / pred[ok]
+    pe_diff[2:n][ok] <- pred[ok] - obs[ok]
+  }
+  list(pe = pe, pe2 = pe2, pe_diff = pe_diff)
+}
+
 .curveSsCatchRows <- function(ts, catch_cols) {
   if (length(catch_cols) == 1L && !is.na(catch_cols)) {
     return(as.numeric(ts[[catch_cols]]))
@@ -282,31 +330,6 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
 
   sprod <- .sprodSeries(bio_all, catch)
   sp_ssb <- .sprodSeries(ssb, catch)
-  pf <- sp_ssb
-
-  pred <- rep(NA_real_, n)
-  obs <- rep(NA_real_, n)
-  if (n >= 2L) {
-    pred[2:n] <- ssb[-n] - catch[-n] + pf[-n]
-    obs[2:n] <- ssb[-1]
-  }
-  pe <- .peTransform(obs, pred, "log")
-  pe2 <- .peTransform(obs, pred, "relative")
-  pe_diff <- .peTransform(obs, pred, "diff")
-
-  tseries$biomass <- bio_all
-  tseries$sprod <- sprod
-  tseries$sp_ssb <- sp_ssb
-  tseries$P_obs <- sprod
-  tseries$P_hat <- rep(NA_real_, n)
-  tseries$B_df <- ssb
-  tseries$B <- bio_all
-  tseries$C_t <- catch
-  tseries$P_ssb <- sp_ssb
-  tseries$pf <- pf
-  tseries$pe <- pe
-  tseries$pe2 <- pe2
-  tseries$pe_diff <- pe_diff
 
   eq <- rep$equil_yield %||% rep$equilibrium_yield %||% rep$Equil_yield
   if (!is.data.frame(eq) || nrow(eq) == 0L) {
@@ -329,6 +352,23 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   keep <- is.finite(curve$ssb) & is.finite(curve$yield) & curve$ssb >= 0
   curve <- curve[keep, , drop = FALSE]
   if (!nrow(curve)) stop("No finite rows in equilibrium curve.", call. = FALSE)
+
+  pf <- .curveSSPfAtSsb(ssb, curve)
+  pe_out <- .curveSSProcessError(ssb, catch, pf)
+
+  tseries$biomass <- bio_all
+  tseries$sprod <- sprod
+  tseries$sp_ssb <- sp_ssb
+  tseries$P_obs <- sprod
+  tseries$P_hat <- rep(NA_real_, n)
+  tseries$B_df <- ssb
+  tseries$B <- bio_all
+  tseries$C_t <- catch
+  tseries$P_ssb <- sp_ssb
+  tseries$pf <- pf
+  tseries$pe <- pe_out$pe
+  tseries$pe2 <- pe_out$pe2
+  tseries$pe_diff <- pe_out$pe_diff
 
   refpts <- .curveSSRefpts(curve, rep$derived_quants)
 
