@@ -1,40 +1,226 @@
 #' Build SS3 time-series and equilibrium curve without FLR dependencies
 #'
-#' Reads an SS3 run (cached \code{ss_output.rds} or \code{Report.sso}) and returns
+#' Reads an SS3 run directory, a saved \code{ss_output.rds}, or an in-memory
+#' \code{SS_output} list (via \code{\link{ssReadOutput}}).
 #' a list with \code{tseries} and \code{curve}, mirroring the pieces used by
 #' \code{ssPe()} / \code{ssPeCompare()}.
 #'
 #' The returned \code{tseries} includes additional columns:
-#' \code{P_obs}, \code{P_hat}, \code{B_df}, \code{B}, \code{C_t}, \code{P_ssb}.
+#' \code{sprod} (surplus production from total biomass, as in \code{r4ss::SSplotYield}
+#' subplot 3/4), \code{sp_ssb} (surplus production from spawning biomass),
+#' legacy aliases \code{P_obs}/\code{P_ssb}/\code{pf}, and process-error columns
+#' \code{pe} (log), \code{pe2} (relative), and \code{pe_diff} (absolute).
 #'
-#' @param x SS3 run directory or \code{SS_output} list.
+#' @param x SS3 run directory, \code{ss_output.rds} path, or \code{SS_output} list.
 #' @param cache Read or write \code{ss_output.rds} when \code{x} is a directory.
 #' @param ... Passed to \code{ssRead()} when reading \code{Report.sso}.
-#' @return List with elements \code{tseries}, \code{curve}, and \code{refpts}.
+#' @return List with elements \code{tseries}, \code{curve}, \code{refpts}, and
+#'   \code{triangle} (an MSY reference polygon in \code{x}/\code{y} space).
 #' @export
 curveSS <- function(x, cache = TRUE, ...) {
-  rep <- if (is.list(x) && !is.data.frame(x)) {
-    x
-  } else if (is.character(x) && length(x) == 1L && nzchar(x)) {
-    path <- normalizePath(x, winslash = "/", mustWork = FALSE)
-    if (!dir.exists(path)) {
-      stop("SS3 run directory not found: ", path, call. = FALSE)
-    }
-    out <- NULL
-    if (isTRUE(cache) && file.exists(ssCache(path))) {
-      out <- readRDS(ssCache(path))
-    }
-    if (is.null(out)) {
-      out <- ssRead(path, writeCache = isTRUE(cache), ...)
-    }
-    if (is.null(out)) {
-      stop("Could not read SS_output from ", path, call. = FALSE)
-    }
-    out
-  } else {
-    stop("Provide an SS3 run directory or SS_output list.", call. = FALSE)
-  }
+  rep <- ssReadOutput(x, cache = cache, ...)
   .curveSSFromRep(rep)
+}
+
+#' Validate process-error display mode
+#' @param mode One of \code{"log"}, \code{"relative"} (\eqn{(y-x)/x}), or
+#'   \code{"diff"} (\eqn{y-x}).
+#' @export
+processErrorMode <- function(mode = c("log", "relative", "diff")) {
+  match.arg(mode)
+}
+
+#' @export
+processErrorLabel <- function(mode = c("log", "relative", "diff")) {
+  mode <- processErrorMode(mode)
+  switch(
+    mode,
+    log = "Log process error",
+    relative = "Process error (y - x) / x",
+    diff = "Process error (y - x)"
+  )
+}
+
+#' @noRd
+.peTransform <- function(obs, pred, mode = c("log", "relative", "diff")) {
+  mode <- match.arg(mode)
+  obs <- as.numeric(obs)
+  pred <- as.numeric(pred)
+  out <- rep(NA_real_, length(obs))
+  ok <- is.finite(obs) & is.finite(pred)
+  if (mode == "log") {
+    ok <- ok & obs > 0 & pred > 0
+    out[ok] <- log(obs[ok]) - log(pred[ok])
+  } else if (mode == "relative") {
+    ok <- ok & pred != 0
+    out[ok] <- (obs[ok] - pred[ok]) / pred[ok]
+  } else {
+    out[ok] <- obs[ok] - pred[ok]
+  }
+  out
+}
+
+#' Process-error column name in a \code{curveSS} time series
+#' @param mode Process-error mode (\code{\link{processErrorMode}}).
+#' @export
+processErrorColumn <- function(mode = c("log", "relative", "diff")) {
+  mode <- processErrorMode(mode)
+  switch(mode, log = "pe", relative = "pe2", diff = "pe_diff")
+}
+
+#' Attach a unified \code{pe_resid} column for plotting
+#' @param pe \code{curveSS} list or run directory.
+#' @param pe_mode Process-error mode.
+#' @export
+peResidualTseries <- function(pe, pe_mode = c("log", "relative", "diff")) {
+  if (is.character(pe) && length(pe) == 1L) {
+    pe <- curveSS(pe)
+  }
+  if (is.null(pe$tseries) || !NROW(pe$tseries)) {
+    stop("pe$tseries is empty.", call. = FALSE)
+  }
+  pe_mode <- processErrorMode(pe_mode)
+  col <- processErrorColumn(pe_mode)
+  ts <- pe$tseries
+  if (!col %in% names(ts)) {
+    stop("Column ", col, " not found in pe$tseries.", call. = FALSE)
+  }
+  ts$pe_resid <- ts[[col]]
+  if (!"id" %in% names(ts) && "run" %in% names(ts)) {
+    ts$id <- ts$run
+  }
+  if (!"sp" %in% names(ts)) {
+    sp_col <- curveSsProductionCol(ts, type = "ssb") %||% "sp_ssb"
+    if (sp_col %in% names(ts)) {
+      ts$sp <- ts[[sp_col]]
+    }
+  }
+  if (!"sp_ss3" %in% names(ts) && "sprod" %in% names(ts)) {
+    ts$sp_ss3 <- ts$sprod
+  }
+  ts
+}
+
+#' @noRd
+.pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
+  if (!is.null(ylim) && length(ylim) == 2L) {
+    return(ylim)
+  }
+  x <- x[is.finite(x)]
+  if (!length(x)) {
+    return(c(-1, 1))
+  }
+  if (length(x) < 5L) {
+    pad <- max(0.05 * diff(range(x)), 1e-6)
+    return(range(x) + c(-pad, pad))
+  }
+  qs <- stats::quantile(x, probs = c(prob, 1 - prob), na.rm = TRUE)
+  pad <- 0.05 * diff(qs)
+  if (!is.finite(pad) || pad <= 0) {
+    pad <- max(0.05 * max(abs(qs)), 1e-6)
+  }
+  c(qs[1L] - pad, qs[2L] + pad)
+}
+
+#' @export
+pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
+  .pePlotLimits(x, ylim = ylim, prob = prob)
+}
+
+.sprodSeries <- function(state, catch) {
+  n <- length(state)
+  if (n < 2L) {
+    return(rep(NA_real_, n))
+  }
+  c(state[-1] - state[-n] + catch[-n], NA_real_)
+}
+
+.curveSsCatchRows <- function(ts, catch_cols) {
+  if (length(catch_cols) == 1L && !is.na(catch_cols)) {
+    return(as.numeric(ts[[catch_cols]]))
+  }
+  if (length(catch_cols) > 1L) {
+    return(rowSums(ts[, catch_cols, drop = FALSE], na.rm = TRUE))
+  }
+  rep(NA_real_, nrow(ts))
+}
+
+#' Aggregate SS3 timeseries to yearly surplus-production inputs
+#'
+#' Matches \code{r4ss::SSplotYield()}: exclude \code{VIRG}/\code{FORE} eras, sum
+#' \code{dead(B)} catch and \code{Bio_all}/\code{SpawnBio} across areas within
+#' year-season, then mean biomass by year and sum catch by year.
+#'
+#' @param ts \code{timeseries} data frame from \code{SS_output()}.
+#' @return Yearly data frame with \code{year}, \code{bio_all}, \code{ssb}, \code{yield}.
+#' @noRd
+.curveSsAggregateYears <- function(ts) {
+  if ("Era" %in% names(ts)) {
+    ts <- ts[!as.character(ts$Era) %in% c("VIRG", "FORE"), , drop = FALSE]
+  }
+  if (!nrow(ts)) {
+    stop("No non-VIRG/FORE rows in SS_output() timeseries.", call. = FALSE)
+  }
+
+  yr_col <- resolveCol(ts, c("Yr", "Year", "year"))
+  ssb_col <- resolveCol(ts, c("SpawnBio", "SSB", "ssb"))
+  bio_all_col <- resolveCol(ts, c("Bio_all"))
+  if (is.na(bio_all_col)) {
+    bio_all_col <- resolveCol(ts, c("Bio_smry", "biomass", "stock"))
+  }
+  seas_col <- resolveCol(ts, c("Seas", "seas", "Season", "season"))
+  if (any(is.na(c(yr_col, ssb_col, bio_all_col)))) {
+    stop("timeseries must include year, SpawnBio/SSB, and Bio_all/biomass columns.", call. = FALSE)
+  }
+
+  catch_cols <- grep("^dead\\(B\\):", names(ts), value = TRUE)
+  if (!length(catch_cols)) {
+    catch_cols <- grep("^retain\\(B\\):", names(ts), value = TRUE)
+  }
+  if (!length(catch_cols)) {
+    catch_cols <- resolveCol(ts, c("totcatch", "yield", "catch"))
+  }
+
+  ts$.__year__ <- as.integer(ts[[yr_col]])
+  ts$.__seas__ <- if (is.na(seas_col)) 1L else as.integer(ts[[seas_col]])
+  ts$.__bio_all__ <- as.numeric(ts[[bio_all_col]])
+  ts$.__ssb__ <- as.numeric(ts[[ssb_col]])
+  ts$.__catch__ <- .curveSsCatchRows(ts, catch_cols)
+
+  ts <- ts[is.finite(ts$.__year__), , drop = FALSE]
+  if (!nrow(ts)) {
+    stop("No finite years in timeseries.", call. = FALSE)
+  }
+
+  season_key <- paste(ts$.__year__, ts$.__seas__, sep = ":")
+  season_pieces <- lapply(split(seq_len(nrow(ts)), season_key), function(idx) {
+    z <- ts[idx, , drop = FALSE]
+    data.frame(
+      year = z$.__year__[[1]],
+      season = z$.__seas__[[1]],
+      bio_all = sum(z$.__bio_all__, na.rm = TRUE),
+      ssb = sum(z$.__ssb__, na.rm = TRUE),
+      catch = sum(z$.__catch__, na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  })
+  season_df <- do.call(rbind, season_pieces)
+  rownames(season_df) <- NULL
+
+  year_pieces <- lapply(split(season_df, season_df$year), function(z) {
+    data.frame(
+      year = z$year[[1]],
+      bio_all = mean(z$bio_all, na.rm = TRUE),
+      ssb = mean(z$ssb, na.rm = TRUE),
+      yield = sum(z$catch, na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  })
+  yearly <- do.call(rbind, year_pieces)
+  rownames(yearly) <- NULL
+  yearly <- yearly[order(yearly$year), , drop = FALSE]
+  rownames(yearly) <- NULL
+  yearly
 }
 
 .curveSSFromRep <- function(rep) {
@@ -46,72 +232,43 @@ curveSS <- function(x, cache = TRUE, ...) {
     stop("Could not extract non-empty timeseries from SS_output().", call. = FALSE)
   }
 
-  if ("Era" %in% names(ts)) {
-    ts <- ts[as.character(ts$Era) == "TIME", , drop = FALSE]
-  }
-  if (!nrow(ts)) stop("No TIME rows in SS_output() timeseries.", call. = FALSE)
-
-  yr_col <- resolveCol(ts, c("Yr", "Year", "year"))
-  ssb_col <- resolveCol(ts, c("SpawnBio", "SSB", "ssb"))
-  bio_col <- resolveCol(ts, c("Bio_smry", "Bio_all", "biomass", "stock"))
-  if (any(is.na(c(yr_col, ssb_col, bio_col)))) {
-    stop("timeseries must include year, SpawnBio/SSB, and biomass columns.", call. = FALSE)
-  }
-
-  catch_cols <- grep("^dead\\(B\\):", names(ts), value = TRUE)
-  if (!length(catch_cols)) catch_cols <- grep("^retain\\(B\\):", names(ts), value = TRUE)
-  if (!length(catch_cols)) catch_cols <- resolveCol(ts, c("totcatch", "yield", "catch"))
-
-  ts$.__year__ <- as.integer(ts[[yr_col]])
-  ts$.__ssb__ <- as.numeric(ts[[ssb_col]])
-  ts$.__bio__ <- as.numeric(ts[[bio_col]])
-  if (length(catch_cols) == 1L && !is.na(catch_cols)) {
-    ts$.__catch__ <- as.numeric(ts[[catch_cols]])
-  } else if (length(catch_cols) > 1L) {
-    ts$.__catch__ <- rowSums(ts[, catch_cols, drop = FALSE], na.rm = TRUE)
-  } else {
-    ts$.__catch__ <- NA_real_
-  }
-
-  years <- sort(unique(ts$.__year__[is.finite(ts$.__year__)]))
-  if (!length(years)) stop("No finite years in timeseries.", call. = FALSE)
-
-  by_year <- lapply(years, function(y) {
-    z <- ts[ts$.__year__ == y, , drop = FALSE]
-    data.frame(
-      year = y,
-      biomass = tail(z$.__bio__[is.finite(z$.__bio__)], 1),
-      ssb = tail(z$.__ssb__[is.finite(z$.__ssb__)], 1),
-      yield = sum(z$.__catch__[is.finite(z$.__catch__)], na.rm = TRUE),
-      stringsAsFactors = FALSE
-    )
-  })
-  tseries <- do.call(rbind, by_year)
-  rownames(tseries) <- NULL
-
+  tseries <- .curveSsAggregateYears(ts)
   n <- nrow(tseries)
-  if (n < 2L) stop("Need at least 2 yearly rows in tseries.", call. = FALSE)
-  B <- as.numeric(tseries$biomass)
-  B_df <- as.numeric(tseries$ssb)
-  C_t <- as.numeric(tseries$yield)
+  if (n < 2L) {
+    stop("Need at least 2 yearly rows in tseries.", call. = FALSE)
+  }
 
-  P_obs <- c(B[-1] - B[-n] + C_t[-n], NA_real_)
-  P_ssb <- c(B_df[-1] - B_df[-n] + C_t[-n], NA_real_)
-  pf <- P_ssb
-  pe <- c(
-    NA_real_,
-    log(pmax(B_df[-1], .Machine$double.eps)) -
-      log(pmax(B_df[-n] - C_t[-n] + pf[-n], .Machine$double.eps))
-  )
+  bio_all <- as.numeric(tseries$bio_all)
+  ssb <- as.numeric(tseries$ssb)
+  catch <- as.numeric(tseries$yield)
 
-  tseries$P_obs <- P_obs
+  sprod <- .sprodSeries(bio_all, catch)
+  sp_ssb <- .sprodSeries(ssb, catch)
+  pf <- sp_ssb
+
+  pred <- rep(NA_real_, n)
+  obs <- rep(NA_real_, n)
+  if (n >= 2L) {
+    pred[2:n] <- ssb[-n] - catch[-n] + pf[-n]
+    obs[2:n] <- ssb[-1]
+  }
+  pe <- .peTransform(obs, pred, "log")
+  pe2 <- .peTransform(obs, pred, "relative")
+  pe_diff <- .peTransform(obs, pred, "diff")
+
+  tseries$biomass <- bio_all
+  tseries$sprod <- sprod
+  tseries$sp_ssb <- sp_ssb
+  tseries$P_obs <- sprod
   tseries$P_hat <- rep(NA_real_, n)
-  tseries$B_df <- B_df
-  tseries$B <- B
-  tseries$C_t <- C_t
-  tseries$P_ssb <- P_ssb
+  tseries$B_df <- ssb
+  tseries$B <- bio_all
+  tseries$C_t <- catch
+  tseries$P_ssb <- sp_ssb
   tseries$pf <- pf
   tseries$pe <- pe
+  tseries$pe2 <- pe2
+  tseries$pe_diff <- pe_diff
 
   eq <- rep$equil_yield %||% rep$equilibrium_yield %||% rep$Equil_yield
   if (!is.data.frame(eq) || nrow(eq) == 0L) {
@@ -127,6 +284,10 @@ curveSS <- function(x, cache = TRUE, ...) {
     yield = as.numeric(eq[[eq_yld]]),
     stringsAsFactors = FALSE
   )
+  eq_f <- resolveCol(eq, c("annF", "F", "F_report"))
+  if (!is.na(eq_f)) {
+    curve$F <- as.numeric(eq[[eq_f]])
+  }
   keep <- is.finite(curve$ssb) & is.finite(curve$yield) & curve$ssb >= 0
   curve <- curve[keep, , drop = FALSE]
   if (!nrow(curve)) stop("No finite rows in equilibrium curve.", call. = FALSE)
@@ -142,10 +303,47 @@ curveSS <- function(x, cache = TRUE, ...) {
   refpts <- data.frame(
     bmsy = get_dq(c("SSB_MSY", "Btgt_MSY")),
     msy = get_dq(c("MSY")),
+    fmsy = get_dq(c("annF_MSY", "F_MSY", "F_at_MSY")),
     stringsAsFactors = FALSE
   )
 
-  list(tseries = tseries, curve = curve, refpts = refpts)
+  triangle <- .curveSSTriangle(curve, refpts)
+
+  list(tseries = tseries, curve = curve, refpts = refpts, triangle = triangle)
+}
+
+#' @noRd
+.curveSSTriangle <- function(curve, refpts) {
+  if (is.null(curve) || !NROW(curve) || is.null(refpts) || !NROW(refpts)) {
+    return(NULL)
+  }
+  if (!all(c("bmsy", "msy") %in% names(refpts))) {
+    return(NULL)
+  }
+  bmsy <- as.numeric(refpts$bmsy[1L])
+  msy <- as.numeric(refpts$msy[1L])
+  if (!is.finite(msy) || msy <= 0) {
+    msy <- suppressWarnings(max(curve$yield, na.rm = TRUE))
+  }
+  if (!is.finite(bmsy) || bmsy <= 0) {
+    idx <- which.max(curve$yield)
+    if (length(idx) && is.finite(curve$ssb[idx])) {
+      bmsy <- as.numeric(curve$ssb[idx])
+    }
+  }
+  if (!is.finite(bmsy) || !is.finite(msy) || bmsy <= 0 || msy <= 0) {
+    return(NULL)
+  }
+  y_cap <- suppressWarnings(max(c(curve$yield, msy), na.rm = TRUE))
+  if (!is.finite(y_cap) || y_cap <= msy) {
+    y_cap <- msy * 1.1
+  }
+  x_cap <- bmsy * (y_cap / msy)
+  data.frame(
+    x = c(bmsy, bmsy, x_cap, bmsy),
+    y = c(msy, y_cap, y_cap, msy),
+    stringsAsFactors = FALSE
+  )
 }
 
 #' Compare SS production-function signal against PT fits
@@ -185,6 +383,7 @@ ssPeCompare<-function(tseries,
                                 eqlYield,
                                 shapePt,
                                 bmsySsb = NULL,
+                                pe_mode = c("log", "relative", "diff"),
                                 makePlots = TRUE,
                                 pointCol = "grey40",
                                 eqCol = "black",
@@ -203,6 +402,7 @@ ssPeCompare<-function(tseries,
     stop("bmsySsb must be NULL or a single positive number")
   }
   if (is.null(tseries$pf)) stop("tseries must contain column 'pf'")
+  pe_mode <- processErrorMode(pe_mode)
 
   calcSurplusProduction<-function(biomassT, biomassT1, catchT) biomassT1 - biomassT + catchT
   shape2p<-function(shape) {
@@ -306,15 +506,24 @@ ssPeCompare<-function(tseries,
 
   Bpred_PT=predictPtBiomass(B_t, C_t, est_B$r, est_B$k, est_B$p)
   SSBpred_PT=predictPtBiomass(SSB_t, C_t, est_SSB$r, est_SSB$k, est_SSB$p)
-  eps_B_PT=log(pmax(B_t1, .Machine$double.eps)) - log(pmax(Bpred_PT, .Machine$double.eps))
-  eps_SSB_PT=log(pmax(SSB_t1, .Machine$double.eps)) - log(pmax(SSBpred_PT, .Machine$double.eps))
+  eps_B_PT=.peTransform(B_t1, Bpred_PT, pe_mode)
+  eps_SSB_PT=.peTransform(SSB_t1, SSBpred_PT, pe_mode)
 
   pf_t=tseries$pf[-length(tseries$pf)]
   SSB_t0=tseries$ssb[-length(tseries$ssb)]
   SSB_t1_0=tseries$ssb[-1]
   C_t0=tseries$yield[-length(tseries$yield)]
-  pe_from_pf=log(pmax(SSB_t1_0, .Machine$double.eps)) - log(pmax(SSB_t0 - C_t0 + pf_t, .Machine$double.eps))
-  pe_ref=if (!is.null(tseries$pe)) tail(tseries$pe, -1) else pe_from_pf
+  pe_from_pf <- .peTransform(
+    SSB_t1_0,
+    SSB_t0 - C_t0 + pf_t,
+    pe_mode
+  )
+  pe_col <- processErrorColumn(pe_mode)
+  pe_ref <- if (pe_col %in% names(tseries)) {
+    tail(tseries[[pe_col]], -1)
+  } else {
+    pe_from_pf
+  }
 
   interp_pt_on_eq=stats::approx(x = SSB_grid, y = PT_SSB_grid, xout = eq_SSB[eq_keep], rule = 1)$y
   ok_cmp=is.finite(interp_pt_on_eq) & is.finite(eq_SP[eq_keep])
@@ -333,8 +542,7 @@ ssPeCompare<-function(tseries,
   if (isTRUE(makePlots)) {
     ylim_B=c(0, max(c(SP_B[SP_B >= 0], PT_B_grid_plot), na.rm = TRUE) * 1.05)
     ylim_SSB=c(0, max(c(SP_SSB[SP_SSB >= 0], eq_SP[eq_keep], PT_SSB_grid_plot), na.rm = TRUE) * 1.05)
-    ylim_PE=range(c(eps_B_PT, eps_SSB_PT, pe_ref), na.rm = TRUE)
-    if (!all(is.finite(ylim_PE))) ylim_PE=c(-1, 1)
+    ylim_PE=.pePlotLimits(c(eps_B_PT, eps_SSB_PT, pe_ref))
 
     sp_b_df=data.frame(biomass = B_t, sp = SP_B)
     sp_b_curve_df=data.frame(biomass = B_grid, pt = PT_B_grid_plot)
@@ -373,7 +581,12 @@ ssPeCompare<-function(tseries,
       ggplot2::coord_cartesian(ylim = ylim_PE) +
       ggplot2::theme_minimal() +
       ggplot2::scale_color_manual(values = c("Reference PE (pf)" = "orange", "Biomass PT PE" = ptColB, "SSB PT PE" = ptColSsb)) +
-      ggplot2::labs(title = "Process error (reference vs PT)", x = "Year", y = "Log process error", color = NULL)
+      ggplot2::labs(
+        title = "Process error (reference vs PT)",
+        x = "Year",
+        y = processErrorLabel(pe_mode),
+        color = NULL
+      )
 
     if (requireNamespace("patchwork", quietly = TRUE)) {
       print((p_bio | p_ssb) / p_pe)

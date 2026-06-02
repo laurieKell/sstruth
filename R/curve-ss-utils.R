@@ -8,15 +8,23 @@ curveSsNeedsEnrichment <- function(pe) {
   }
   has_pe2 <- "pe2" %in% names(ts) &&
     any(is.finite(ts$pe2) & abs(ts$pe2) > 1e-6, na.rm = TRUE)
-  has_sp <- any(c("sp", "P_ssb", "pf") %in% names(ts))
+  has_sp <- any(c("sp", "sp_ssb", "sprod", "P_ssb", "pf") %in% names(ts))
   !has_pe2 || !has_sp
 }
 
 #' Resolve production column name in curveSS tseries
 #' @param ts \code{tseries} data frame.
+#' @param type \code{"ssb"} for spawning-biomass surplus production (default),
+#'   \code{"ss3"} for \code{r4ss::SSplotYield()} total-biomass surplus production.
 #' @export
-curveSsProductionCol <- function(ts) {
-  for (col in c("sp", "P_ssb", "pf")) {
+curveSsProductionCol <- function(ts, type = c("ssb", "ss3")) {
+  type <- match.arg(type)
+  cols <- if (type == "ss3") {
+    c("sprod", "P_obs", "sp_ss3")
+  } else {
+    c("sp_ssb", "sp", "P_ssb", "pf")
+  }
+  for (col in cols) {
     if (col %in% names(ts)) {
       return(col)
     }
@@ -45,15 +53,38 @@ curveSsTerminalRows <- function(ts) {
     .checkRuns(x)
     return(x)
   }
-  if (is.character(x) && length(x) == 1L && nzchar(x)) {
-    path <- normalizePath(x, winslash = "/", mustWork = FALSE)
-    if (file.exists(file.path(ssRunDir(path), "Report.sso"))) {
+  if (is.character(x) && length(x) >= 1L && all(nzchar(x))) {
+    paths <- normalizePath(x, winslash = "/", mustWork = FALSE)
+    is_rds <- vapply(paths, .isSsOutputFile, logical(1))
+    is_run <- !is_rds & dir.exists(paths)
+    if (length(paths) > 1L || any(is_rds)) {
+      if (!all(is_rds | is_run)) {
+        bad <- paths[!(is_rds | is_run)]
+        stop(
+          "Not an SS3 run directory or SS_output .rds: ",
+          paste(bad, collapse = ", "),
+          call. = FALSE
+        )
+      }
+      ids <- if (!is.null(names(x)) && length(names(x)) == length(x)) {
+        unname(names(x))
+      } else {
+        vapply(paths, .ssOutputId, character(1))
+      }
+      return(data.frame(id = ids, path = paths, stringsAsFactors = FALSE))
+    }
+    path <- paths
+    if (file.exists(file.path(ssRunDir(path), "Report.sso")) ||
+        file.exists(ssCache(path))) {
       return(data.frame(id = basename(path), path = path, stringsAsFactors = FALSE))
     }
     return(ssRuns(path))
   }
   stop(
-    "Provide an assessment directory, run directory, or ssRuns() table.",
+    paste(
+      "Provide an assessment directory, run directory, ssRuns() table,",
+      "or character vector of run directories / ss_output.rds paths."
+    ),
     call. = FALSE
   )
 }
@@ -77,9 +108,14 @@ curveSsTerminalRows <- function(ts) {
   if (!length(pieces)) {
     return(NULL)
   }
-  parts <- names(pieces[[1]])
+  parts <- unique(unlist(lapply(pieces, names), use.names = FALSE))
   combined <- lapply(parts, function(part) {
-    df <- do.call(rbind, lapply(pieces, `[[`, part))
+    rows <- lapply(pieces, function(x) x[[part]])
+    rows <- rows[!vapply(rows, is.null, logical(1))]
+    if (!length(rows)) {
+      return(NULL)
+    }
+    df <- do.call(rbind, rows)
     rownames(df) <- NULL
     df
   })
@@ -93,15 +129,17 @@ curveSsTerminalRows <- function(ts) {
 #' row-binds \code{tseries}, \code{curve}, and \code{refpts}. Uses cached
 #' \code{ss_output.rds} when available (run \code{SS_outputs()} first).
 #'
-#' @param x Assessment parent directory, \code{ssRuns()} table, or single run directory.
+#' @param x Assessment parent directory, \code{ssRuns()} table, single run directory,
+#'   or character vector of run directories / \code{ss_output.rds} paths (optional
+#'   names used as scenario ids).
 #' @param col Run id column name (default \code{"run"}).
 #' @param for_plots Include columns needed for PE diagnostic figures; may call
 #'   \code{FLRebuild::curveSS} when enrichment is needed.
 #' @param cache Read cached \code{ss_output.rds} per run.
 #' @param parallel,workers Parallel \code{curveSS} calls.
 #' @param ... Passed to \code{curveSS()} / \code{ssRead()}.
-#' @return Named list with combined \code{tseries}, \code{curve}, and \code{refpts}
-#'   data frames, or \code{NULL} if no runs succeed.
+#' @return Named list with combined \code{tseries}, \code{curve}, \code{refpts},
+#'   and optional \code{triangle} data frames, or \code{NULL} if no runs succeed.
 #' @export
 ssCurve <- function(
   x,
@@ -154,7 +192,11 @@ ssCurve <- function(
       id <- runs$id[[i]]
       path <- runs$path[[i]]
       out <- tryCatch(
-        FLRebuild::curveSS(path, ...),
+        if (.isSsOutputFile(path)) {
+          curveSS(ssReadOutput(path))
+        } else {
+          FLRebuild::curveSS(path, ...)
+        },
         error = function(e) {
           message("[ssCurve] FLRebuild ", id, ": ", conditionMessage(e))
           NULL
@@ -181,7 +223,7 @@ ssCurve <- function(
 #' Uses \code{\link{curveSS}} from sstruth; optionally falls back to
 #' \code{FLRebuild::curveSS} when \code{for_plots = TRUE} and enrichment is needed.
 #'
-#' @param paths Character vector of SS3 run directories.
+#' @param paths Character vector of SS3 run directories or \code{ss_output.rds} paths.
 #' @param for_plots Request PE columns needed for diagnostic figures.
 #' @param parallel Run \code{curveSS} calls in parallel when length(paths) > 1.
 #' @param workers Parallel worker count.
@@ -192,13 +234,20 @@ curveSsLoadCombined <- function(
   parallel = FALSE,
   workers = NULL
 ) {
-  paths <- paths[dir.exists(paths)]
+  paths <- normalizePath(paths, winslash = "/", mustWork = FALSE)
+  ok <- dir.exists(paths) | vapply(paths, .isSsOutputFile, logical(1))
+  paths <- paths[ok]
   if (!length(paths)) {
     return(NULL)
   }
+  ids <- if (!is.null(names(paths)) && length(names(paths)) == length(paths)) {
+    unname(names(paths))
+  } else {
+    vapply(paths, .ssOutputId, character(1))
+  }
   runs <- data.frame(
-    id = basename(paths),
-    path = normalizePath(paths, winslash = "/", mustWork = FALSE),
+    id = ids,
+    path = paths,
     stringsAsFactors = FALSE
   )
   out <- ssCurve(

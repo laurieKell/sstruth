@@ -15,7 +15,9 @@ ssCurve(
 )
 }
 \arguments{
-\item{x}{Assessment parent directory, \code{ssRuns()} table, or single run directory.}
+\item{x}{Assessment parent directory, \code{ssRuns()} table, single run directory,
+or character vector of run directories / \code{ss_output.rds} paths (optional
+names used as scenario ids).}
 
 \item{col}{Run id column name (default \code{"run"}).}
 

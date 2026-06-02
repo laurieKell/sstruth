@@ -7,7 +7,7 @@
 curveSsLoadCombined(paths, for_plots = FALSE, parallel = FALSE, workers = NULL)
 }
 \arguments{
-\item{paths}{Character vector of SS3 run directories.}
+\item{paths}{Character vector of SS3 run directories or \code{ss_output.rds} paths.}
 
 \item{for_plots}{Request PE columns needed for diagnostic figures.}
 

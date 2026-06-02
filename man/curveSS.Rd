@@ -7,7 +7,7 @@
 curveSS(x, cache = TRUE, ...)
 }
 \arguments{
-\item{x}{SS3 run directory or \code{SS_output} list.}
+\item{x}{SS3 run directory, \code{ss_output.rds} path, or \code{SS_output} list.}
 
 \item{cache}{Read or write \code{ss_output.rds} when \code{x} is a directory.}
 
@@ -17,11 +17,15 @@ curveSS(x, cache = TRUE, ...)
 List with elements \code{tseries}, \code{curve}, and \code{refpts}.
 }
 \description{
-Reads an SS3 run (cached \code{ss_output.rds} or \code{Report.sso}) and returns
+Reads an SS3 run directory, a saved \code{ss_output.rds}, or an in-memory
+\code{SS_output} list (via \code{\link{ssReadOutput}}).
 a list with \code{tseries} and \code{curve}, mirroring the pieces used by
 \code{ssPe()} / \code{ssPeCompare()}.
 }
 \details{
 The returned \code{tseries} includes additional columns:
-\code{P_obs}, \code{P_hat}, \code{B_df}, \code{B}, \code{C_t}, \code{P_ssb}.
+\code{sprod} (surplus production from total biomass, as in \code{r4ss::SSplotYield}
+subplot 3/4), \code{sp_ssb} (surplus production from spawning biomass),
+legacy aliases \code{P_obs}/\code{P_ssb}/\code{pf}, and process-error columns
+\code{pe} (log), \code{pe2} (relative), and \code{pe_diff} (absolute).
 }
