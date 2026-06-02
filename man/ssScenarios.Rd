@@ -75,6 +75,9 @@ ssScenarios(
 }
 \value{
 List of task entries.
+
+List with \code{runs}, \code{catalog}, \code{ssOutput} and \code{flStock}
+status data frames (not the cached objects themselves).
 }
 \description{
 \enumerate{

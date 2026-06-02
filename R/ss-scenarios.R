@@ -182,6 +182,8 @@ ssCatalogTex <- function(
 #' @param outDir Catalog CSV/RDS directory.
 #' @param texOut LaTeX table path.
 #' @param refresh,parallel,workers Passed to \code{SS_outputs()} / \code{readFLSss3()}.
+#' @return List with \code{runs}, \code{catalog}, \code{ssOutput} and \code{flStock}
+#'   status data frames (not the cached objects themselves).
 #' @inheritParams ssCatalogTex
 #' @export
 ssScenarios <- function(
@@ -263,7 +265,7 @@ ssScenarios <- function(
   }
 
   ssOutStatus <- NULL
-  fls <- NULL
+  flStockStatus <- NULL
   artifactStatus <- NULL
 
   if (isTRUE(ssOutput)) {
@@ -278,9 +280,10 @@ ssScenarios <- function(
 
   if (isTRUE(flStock)) {
     message("[ssScenarios] iii) readFLSss3()")
-    fls <- readFLSss3(
+    flStockStatus <- readFLSss3(
       ctx$runs,
       writeCache = TRUE,
+      returnObjects = FALSE,
       parallel = parallel,
       workers = workers
     )
@@ -315,7 +318,7 @@ ssScenarios <- function(
       paths = paths,
       tex = texPath,
       ssOutput = ssOutStatus,
-      flStock = fls,
+      flStock = flStockStatus,
       artifacts = artifactStatus
     ),
     class = "ssScenarios"

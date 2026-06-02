@@ -375,6 +375,96 @@ ssBindRuns <- function(
   ssBind(reps, slot, col = col)
 }
 
+#' Read cached \code{SS_output} and bind one slot as a data frame
+#'
+#' Loads \code{ss_output.rds} from run folder(s) (run \code{SS_outputs()} first),
+#' extracts \code{slot} via \code{ssSlot()}, and row-binds into one data frame with
+#' a scenario column.
+#'
+#' @param x Assessment parent directory, single run directory, \code{ssRuns()} table,
+#'   or named list of \code{SS_output} objects.
+#' @param slot Slot name (case-insensitive), e.g. \code{"kobe"}, \code{"timeseries"}.
+#' @param col Scenario id column name.
+#' @inheritParams ssBindRuns
+#' @export
+getSS <- function(
+  x,
+  slot,
+  col = "scenario",
+  cache = TRUE,
+  covar = FALSE,
+  forecast = FALSE,
+  refresh = FALSE,
+  parallel = TRUE,
+  workers = NULL
+) {
+  if (missing(slot) || is.null(slot) || !nzchar(slot)) {
+    stop("Provide slot (e.g. kobe, timeseries).", call. = FALSE)
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    return(ssBind(x, slot, col = col))
+  }
+  runs <- if (is.data.frame(x)) {
+    x
+  } else if (is.character(x) && length(x) == 1L && nzchar(x)) {
+    path <- normalizePath(x, winslash = "/", mustWork = FALSE)
+    if (file.exists(file.path(ssRunDir(path), "Report.sso"))) {
+      data.frame(id = basename(path), path = path, stringsAsFactors = FALSE)
+    } else {
+      ssRuns(path)
+    }
+  } else {
+    stop(
+      "Provide an assessment directory, run directory, ssRuns() table, or SS_output list.",
+      call. = FALSE
+    )
+  }
+  ssBindRuns(
+    runs,
+    slot = slot,
+    col = col,
+    cache = cache,
+    covar = covar,
+    forecast = forecast,
+    refresh = refresh,
+    parallel = parallel,
+    workers = workers
+  )
+}
+
+#' Kobe trajectories across SS3 runs
+#'
+#' Row-binds the \code{Kobe} slot (typically \code{Yr}, \code{B.Bmsy}, \code{F.Fmsy})
+#' from cached \code{SS_output} in each run folder. Run \code{SS_outputs()} first.
+#'
+#' @param x Assessment base directory, \code{ssRuns()} table, or named list of
+#'   \code{SS_output} objects.
+#' @param col Scenario id column name (default \code{"scenario"}).
+#' @inheritParams ssBindRuns
+#' @export
+ssKobe <- function(
+  x,
+  col = "scenario",
+  cache = TRUE,
+  covar = FALSE,
+  forecast = FALSE,
+  refresh = FALSE,
+  parallel = TRUE,
+  workers = NULL
+) {
+  getSS(
+    x,
+    slot = "Kobe",
+    col = col,
+    cache = cache,
+    covar = covar,
+    forecast = forecast,
+    refresh = refresh,
+    parallel = parallel,
+    workers = workers
+  )
+}
+
 #' Extract and bind one slot under an assessment base
 #'
 #' @param base Assessment parent directory.

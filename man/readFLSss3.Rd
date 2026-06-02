@@ -4,20 +4,32 @@
 \alias{readFLSss3}
 \title{Read \code{FLStock} objects from SS3 run folder(s)}
 \usage{
-readFLSss3(x, writeCache = TRUE, parallel = TRUE, workers = NULL, ...)
+readFLSss3(
+  x,
+  writeCache = TRUE,
+  returnObjects = TRUE,
+  parallel = TRUE,
+  workers = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{SS3 run directory, assessment base to scan, or \code{ssRuns()} table.}
 
 \item{writeCache}{Save \code{flstock.rds} in each run folder.}
 
+\item{returnObjects}{If \code{FALSE}, return a per-run status data frame
+instead of \code{FLStock} object(s).}
+
 \item{parallel, workers}{Parallel reads when multiple runs.}
 
 \item{...}{Passed to \code{ss3om::readFLSss3()}.}
 }
 \value{
-For one run, an \code{FLStock}. For many runs, a named list of
-\code{FLStock} objects (names = run ids).
+For one run with \code{returnObjects = TRUE}, an \code{FLStock}.
+For many runs with \code{returnObjects = TRUE}, a named list of
+\code{FLStock} objects (names = run ids). With \code{returnObjects = FALSE},
+a status data frame (\code{id}, \code{path}, \code{cache}, \code{ok}, ...).
 }
 \description{
 Like \code{ss3om::readFLSss3()}, but when \code{x} is an assessment parent
