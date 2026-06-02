@@ -434,8 +434,9 @@ getSS <- function(
 
 #' Kobe trajectories across SS3 runs
 #'
-#' Row-binds the \code{Kobe} slot (typically \code{Yr}, \code{B.Bmsy}, \code{F.Fmsy})
-#' from cached \code{SS_output} in each run folder. Run \code{SS_outputs()} first.
+#' Row-binds the \code{Kobe} slot from cached \code{SS_output} in each run folder.
+#' Renames \code{Yr}, \code{B.Bmsy}, and \code{F.Fmsy} to \code{year}, \code{stock},
+#' and \code{harvest}. Run \code{SS_outputs()} first.
 #'
 #' @param x Assessment base directory, \code{ssRuns()} table, or named list of
 #'   \code{SS_output} objects.
@@ -452,7 +453,7 @@ ssKobe <- function(
   parallel = TRUE,
   workers = NULL
 ) {
-  getSS(
+  out <- getSS(
     x,
     slot = "Kobe",
     col = col,
@@ -463,6 +464,12 @@ ssKobe <- function(
     parallel = parallel,
     workers = workers
   )
+  ren <- c(Yr = "year", "B.Bmsy" = "stock", "F.Fmsy" = "harvest")
+  hit <- intersect(names(ren), names(out))
+  if (length(hit)) {
+    names(out)[match(hit, names(out))] <- unname(ren[hit])
+  }
+  out
 }
 
 #' Extract and bind one slot under an assessment base

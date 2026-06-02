@@ -24,6 +24,7 @@ ssKobe(
 \item{cache}{If \code{TRUE}, require cached output (use after \code{SS_outputs()}).}
 }
 \description{
-Row-binds the \code{Kobe} slot (typically \code{Yr}, \code{B.Bmsy}, \code{F.Fmsy})
-from cached \code{SS_output} in each run folder. Run \code{SS_outputs()} first.
+Row-binds the \code{Kobe} slot from cached \code{SS_output} in each run folder.
+Renames \code{Yr}, \code{B.Bmsy}, and \code{F.Fmsy} to \code{year}, \code{stock},
+and \code{harvest}. Run \code{SS_outputs()} first.
 }
