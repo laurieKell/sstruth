@@ -11,6 +11,7 @@ runFlevelProjections(
   ssVersion = "3.30",
   scenarios = c("catchReported", "fMeanFull", "fZero", "fMsy"),
   referenceDataDir = NULL,
+  forecastYears = NULL,
   runLogical = TRUE,
   reuseProjectionWorkdir = TRUE,
   removeProjectionWorkdir = TRUE,
@@ -34,6 +35,9 @@ runFlevelProjections(
 \item{referenceDataDir}{Directory with the \strong{full} assessment data file (usually
 \code{.../retrospectives/retro0}). Used only for \code{catchReported}. Default:
 \code{file.path(dirname(baseDir), "retro0")}.}
+
+\item{forecastYears}{Optional integer vector of calendar forecast years. Overrides
+\code{Nforecastyrs} from \code{forecast.ss} (length sets \code{Nforecastyrs}).}
 
 \item{runLogical}{If \code{FALSE}, only copy and patch files; do not call the executable.}
 

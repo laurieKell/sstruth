@@ -94,32 +94,45 @@ ssCache <- function(runDir) {
 
 #' Read \code{SS_output} for one run
 #'
-#' Uses \code{ss_output.rds}, then \code{ss.RData}, then \code{Report.sso}.
-#' Fresh reads are cached to \code{ss_output.rds} when \code{writeCache = TRUE}.
+#' Uses \code{ss_output.rds} in each run folder, then \code{ss.RData}, then
+#' \code{Report.sso}. Fresh reads are written to \code{ss_output.rds} when
+#' \code{writeCache = TRUE}. Run \code{SS_outputs()} once to populate caches,
+#' then use \code{ssLazyLoad()} or \code{getSS(..., cache = TRUE)} without
+#' re-parsing \code{Report.sso}.
 #'
 #' @param runDir SS3 run directory.
 #' @param refresh Ignore cache and re-read \code{Report.sso}.
+#' @param cacheOnly If \code{TRUE}, read only from \code{ss_output.rds} (no fallback).
 #' @param covar,forecast Passed to \code{r4ss::SS_output()}.
 #' @param writeCache Write \code{ss_output.rds} after a fresh read.
 #' @export
 ssRead <- function(
   runDir,
   refresh = FALSE,
+  cacheOnly = FALSE,
   covar = FALSE,
   forecast = FALSE,
   writeCache = TRUE
 ) {
+  runDir <- ssRunDir(runDir)
+  cache <- ssCache(runDir)
   if (!isTRUE(refresh)) {
-    cache <- ssCache(runDir)
     if (file.exists(cache)) {
       return(readRDS(cache))
+    }
+    if (isTRUE(cacheOnly)) {
+      stop("No cache at ", cache, "; run SS_outputs() first.", call. = FALSE)
     }
     rdata <- file.path(runDir, "ss.RData")
     if (file.exists(rdata)) {
       env <- new.env(parent = emptyenv())
       load(rdata, envir = env)
       if (exists("ss", envir = env, inherits = FALSE)) {
-        return(get("ss", envir = env, inherits = FALSE))
+        rep <- get("ss", envir = env, inherits = FALSE)
+        if (isTRUE(writeCache) && !is.null(rep)) {
+          saveRDS(rep, cache)
+        }
+        return(rep)
       }
     }
   }
@@ -209,14 +222,20 @@ SS_outputs <- function(
       path <- runs$path[[i]]
       had <- file.exists(ssCache(path))
       message("[SS_outputs] ", id, if (had && !refresh) " (cached)" else "")
-      rep <- ssRead(path, refresh = refresh, covar = covar, forecast = forecast)
+      if (had && !refresh) {
+        ok <- isTRUE(file.info(ssCache(path))$size > 0)
+      } else {
+        rep <- ssRead(path, refresh = refresh, covar = covar, forecast = forecast)
+        ok <- !is.null(rep)
+        rm(rep)
+      }
       data.frame(
         id = id,
         path = path,
         cache = ssCache(path),
         had_cache = had,
         refreshed = refresh || !had,
-        ok = !is.null(rep),
+        ok = ok,
         stringsAsFactors = FALSE
       )
     },
@@ -230,19 +249,36 @@ SS_outputs <- function(
 
 #' Load \code{SS_output} objects for many runs
 #'
+#' With \code{lazy = TRUE}, returns \code{\link{ssLazyLoad}} so each run is read
+#' from \code{ss_output.rds} only when accessed. With \code{lazy = FALSE}, loads
+#' all runs into a named list (can use substantial memory).
+#'
 #' @param runs \code{ssRuns()} table.
+#' @param lazy Return a lazy loader instead of loading all runs into memory.
 #' @param cache If \code{TRUE}, require cached output (use after \code{SS_outputs()}).
 #' @export
 ssLoad <- function(
   runs,
+  lazy = FALSE,
   cache = FALSE,
   covar = FALSE,
   forecast = FALSE,
   refresh = FALSE,
   parallel = TRUE,
-  workers = NULL
+  workers = NULL,
+  writeCache = TRUE
 ) {
   .checkRuns(runs)
+  if (isTRUE(lazy)) {
+    return(ssLazyLoad(
+      runs,
+      cache = cache,
+      covar = covar,
+      forecast = forecast,
+      refresh = refresh,
+      writeCache = writeCache
+    ))
+  }
   reps <- .ssParallel(
     seq_len(nrow(runs)),
     function(i) {
@@ -349,22 +385,45 @@ ssSlots <- function(rep) {
 
 #' Load runs and bind one slot
 #'
+#' When \code{lazy = TRUE} (default if \code{cache = TRUE}), reads one cached run
+#' at a time and discards it after extracting \code{slot}, avoiding a large in-memory
+#' list of full \code{SS_output} objects.
+#'
 #' @inheritParams ssBind
 #' @inheritParams ssLoad
+#' @param lazy Stream runs one at a time when binding (default \code{NULL} = \code{cache}).
 #' @export
 ssBindRuns <- function(
   runs,
   slot,
   col = "scenario",
   cache = TRUE,
+  lazy = NULL,
   covar = FALSE,
   forecast = FALSE,
   refresh = FALSE,
   parallel = TRUE,
   workers = NULL
 ) {
+  if (is.null(lazy)) {
+    lazy <- isTRUE(cache) && !isTRUE(refresh)
+  }
+  if (isTRUE(lazy)) {
+    return(.ssBindRunsStream(
+      runs,
+      slot = slot,
+      col = col,
+      cache = cache,
+      covar = covar,
+      forecast = forecast,
+      refresh = refresh,
+      parallel = parallel,
+      workers = workers
+    ))
+  }
   reps <- ssLoad(
     runs,
+    lazy = FALSE,
     cache = cache,
     covar = covar,
     forecast = forecast,
@@ -440,12 +499,12 @@ getSS <- function(
 #'
 #' @param x Assessment base directory, \code{ssRuns()} table, or named list of
 #'   \code{SS_output} objects.
-#' @param col Scenario id column name (default \code{"scenario"}).
+#' @param col Run id column name (default \code{"run"}).
 #' @inheritParams ssBindRuns
 #' @export
 ssKobe <- function(
   x,
-  col = "scenario",
+  col = "run",
   cache = TRUE,
   covar = FALSE,
   forecast = FALSE,

@@ -6,7 +6,7 @@
 \usage{
 ssKobe(
   x,
-  col = "scenario",
+  col = "run",
   cache = TRUE,
   covar = FALSE,
   forecast = FALSE,
@@ -19,7 +19,7 @@ ssKobe(
 \item{x}{Assessment base directory, \code{ssRuns()} table, or named list of
 \code{SS_output} objects.}
 
-\item{col}{Scenario id column name (default \code{"scenario"}).}
+\item{col}{Run id column name (default \code{"run"}).}
 
 \item{cache}{If \code{TRUE}, require cached output (use after \code{SS_outputs()}).}
 }

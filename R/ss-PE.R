@@ -1,25 +1,46 @@
 #' Build SS3 time-series and equilibrium curve without FLR dependencies
 #'
-#' Reads an SS3 run via \code{r4ss::SS_output()} and returns a list with
-#' \code{tseries} and \code{curve}, mirroring the pieces used by
+#' Reads an SS3 run (cached \code{ss_output.rds} or \code{Report.sso}) and returns
+#' a list with \code{tseries} and \code{curve}, mirroring the pieces used by
 #' \code{ssPe()} / \code{ssPeCompare()}.
 #'
 #' The returned \code{tseries} includes additional columns:
 #' \code{P_obs}, \code{P_hat}, \code{B_df}, \code{B}, \code{C_t}, \code{P_ssb}.
 #'
-#' @param x SS3 directory path.
-#' @param ... Reserved for future options.
+#' @param x SS3 run directory or \code{SS_output} list.
+#' @param cache Read or write \code{ss_output.rds} when \code{x} is a directory.
+#' @param ... Passed to \code{ssRead()} when reading \code{Report.sso}.
 #' @return List with elements \code{tseries}, \code{curve}, and \code{refpts}.
 #' @export
-curveSS <- function(x, ...) {
-  if (!is.character(x) || length(x) != 1L || !nzchar(x) || !dir.exists(x)) {
-    stop("x must be a single existing SS3 run directory.", call. = FALSE)
+curveSS <- function(x, cache = TRUE, ...) {
+  rep <- if (is.list(x) && !is.data.frame(x)) {
+    x
+  } else if (is.character(x) && length(x) == 1L && nzchar(x)) {
+    path <- normalizePath(x, winslash = "/", mustWork = FALSE)
+    if (!dir.exists(path)) {
+      stop("SS3 run directory not found: ", path, call. = FALSE)
+    }
+    out <- NULL
+    if (isTRUE(cache) && file.exists(ssCache(path))) {
+      out <- readRDS(ssCache(path))
+    }
+    if (is.null(out)) {
+      out <- ssRead(path, writeCache = isTRUE(cache), ...)
+    }
+    if (is.null(out)) {
+      stop("Could not read SS_output from ", path, call. = FALSE)
+    }
+    out
+  } else {
+    stop("Provide an SS3 run directory or SS_output list.", call. = FALSE)
   }
+  .curveSSFromRep(rep)
+}
+
+.curveSSFromRep <- function(rep) {
   if (!requireNamespace("r4ss", quietly = TRUE)) {
     stop("Package 'r4ss' is required.", call. = FALSE)
   }
-
-  rep <- r4ss::SS_output(x, verbose = FALSE, printstats = FALSE, covar = FALSE)
   ts <- tsDf(rep)
   if (!is.data.frame(ts) || nrow(ts) == 0L) {
     stop("Could not extract non-empty timeseries from SS_output().", call. = FALSE)

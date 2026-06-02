@@ -17,7 +17,7 @@ Integer vector of target years, increasing, or \code{integer(0)}.
 \description{
 For a peel with terminal year \eqn{T} and a reference (non-peeled) assessment whose
 output extends through \code{fullLastYr} (typically \code{assessmentMaxYear(repFull)}),
-returns p7BxKldnxz7Krj2n8e0K4j9DQBZGIRoq-\code{fullLastYr}. Empty if p7BxKldnxz7Krj2n8e0K4j9DQBZGIRoq-6\code{fullLastYr}.
+returns TIEiS6ejKubi05QbeeQzw1QdgLdo1mFc-\code{fullLastYr}. Empty if TIEiS6ejKubi05QbeeQzw1QdgLdo1mFc-6\code{fullLastYr}.
 }
 \details{
 Use these years in \code{forecast.ss} (number of forecast years, input catches or

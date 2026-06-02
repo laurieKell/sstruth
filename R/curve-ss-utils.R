@@ -28,12 +28,152 @@ curveSsProductionCol <- function(ts) {
 #' @param ts \code{tseries} data frame with \code{id} and \code{year}.
 #' @export
 curveSsTerminalRows <- function(ts) {
-  if (is.null(ts) || !NROW(ts) || !"id" %in% names(ts)) {
+  if (is.null(ts) || !NROW(ts)) {
     return(NULL)
   }
-  do.call(rbind, lapply(split(ts, ts$id, drop = TRUE), function(x) {
+  id_col <- resolveCol(ts, c("run", "id", "scenario"))
+  if (is.na(id_col) || !"year" %in% names(ts)) {
+    return(NULL)
+  }
+  do.call(rbind, lapply(split(ts, ts[[id_col]], drop = TRUE), function(x) {
     x[which.max(x$year), , drop = FALSE]
   }))
+}
+
+.ssCurveRuns <- function(x) {
+  if (is.data.frame(x)) {
+    .checkRuns(x)
+    return(x)
+  }
+  if (is.character(x) && length(x) == 1L && nzchar(x)) {
+    path <- normalizePath(x, winslash = "/", mustWork = FALSE)
+    if (file.exists(file.path(ssRunDir(path), "Report.sso"))) {
+      return(data.frame(id = basename(path), path = path, stringsAsFactors = FALSE))
+    }
+    return(ssRuns(path))
+  }
+  stop(
+    "Provide an assessment directory, run directory, or ssRuns() table.",
+    call. = FALSE
+  )
+}
+
+.curveSsTagRun <- function(out, run_id, col = "run") {
+  lapply(out, function(df) {
+    if (is.data.frame(df) && NROW(df)) {
+      cbind(
+        stats::setNames(data.frame(run_id, stringsAsFactors = FALSE), col),
+        df,
+        stringsAsFactors = FALSE
+      )
+    } else {
+      df
+    }
+  })
+}
+
+.curveSsCombinePieces <- function(pieces) {
+  pieces <- pieces[!vapply(pieces, is.null, logical(1))]
+  if (!length(pieces)) {
+    return(NULL)
+  }
+  parts <- names(pieces[[1]])
+  combined <- lapply(parts, function(part) {
+    df <- do.call(rbind, lapply(pieces, `[[`, part))
+    rownames(df) <- NULL
+    df
+  })
+  names(combined) <- parts
+  combined
+}
+
+#' Process-error curves across SS3 runs
+#'
+#' Runs \code{curveSS()} on every nested scenario under an assessment base and
+#' row-binds \code{tseries}, \code{curve}, and \code{refpts}. Uses cached
+#' \code{ss_output.rds} when available (run \code{SS_outputs()} first).
+#'
+#' @param x Assessment parent directory, \code{ssRuns()} table, or single run directory.
+#' @param col Run id column name (default \code{"run"}).
+#' @param for_plots Include columns needed for PE diagnostic figures; may call
+#'   \code{FLRebuild::curveSS} when enrichment is needed.
+#' @param cache Read cached \code{ss_output.rds} per run.
+#' @param parallel,workers Parallel \code{curveSS} calls.
+#' @param ... Passed to \code{curveSS()} / \code{ssRead()}.
+#' @return Named list with combined \code{tseries}, \code{curve}, and \code{refpts}
+#'   data frames, or \code{NULL} if no runs succeed.
+#' @export
+ssCurve <- function(
+  x,
+  col = "run",
+  for_plots = FALSE,
+  cache = TRUE,
+  parallel = TRUE,
+  workers = NULL,
+  ...
+) {
+  runs <- .ssCurveRuns(x)
+  if (isTRUE(parallel) && nrow(runs) > 1L) {
+    nw <- workers %||% max(1L, parallel::detectCores(logical = TRUE) - 2L)
+    message("[ssCurve] workers: ", min(as.integer(nw), nrow(runs)))
+  }
+
+  load_one <- function(i) {
+    id <- runs$id[[i]]
+    path <- runs$path[[i]]
+    message("[ssCurve] ", id)
+    out <- tryCatch(
+      curveSS(path, cache = cache, ...),
+      error = function(e) {
+        message("[ssCurve] ", id, ": ", conditionMessage(e))
+        NULL
+      }
+    )
+    if (is.null(out)) {
+      return(NULL)
+    }
+    .curveSsTagRun(out, id, col = col)
+  }
+
+  pieces <- .ssParallel(
+    seq_len(nrow(runs)),
+    load_one,
+    parallel = parallel,
+    workers = workers
+  )
+  combined <- .curveSsCombinePieces(pieces)
+
+  if (is.null(combined)) {
+    return(NULL)
+  }
+  if (isTRUE(for_plots) && curveSsNeedsEnrichment(combined)) {
+    if (!requireNamespace("FLRebuild", quietly = TRUE)) {
+      return(combined)
+    }
+    load_fb <- function(i) {
+      id <- runs$id[[i]]
+      path <- runs$path[[i]]
+      out <- tryCatch(
+        FLRebuild::curveSS(path, ...),
+        error = function(e) {
+          message("[ssCurve] FLRebuild ", id, ": ", conditionMessage(e))
+          NULL
+        }
+      )
+      if (is.null(out)) {
+        return(NULL)
+      }
+      .curveSsTagRun(out, id, col = col)
+    }
+    pieces <- .ssParallel(
+      seq_len(nrow(runs)),
+      load_fb,
+      parallel = parallel,
+      workers = workers
+    )
+    combined <- .curveSsCombinePieces(pieces)
+  }
+  combined
 }
 
 #' Load and combine curveSS objects from multiple SS3 directories
@@ -56,79 +196,28 @@ curveSsLoadCombined <- function(
   if (!length(paths)) {
     return(NULL)
   }
-  load_one <- function(p) {
-    sid <- gsub("Scenario-", "Scenario ", basename(p))
-    out <- curveSS(p)
-    lapply(out, function(df) {
-      if (is.data.frame(df)) {
-        cbind(id = sid, df, stringsAsFactors = FALSE)
-      } else {
-        df
-      }
-    })
-  }
-  runs <- if (isTRUE(parallel) && length(paths) > 1L &&
-      requireNamespace("future.apply", quietly = TRUE) &&
-      requireNamespace("future", quietly = TRUE)) {
-    nw <- workers
-    if (is.null(nw)) {
-      nw <- max(1L, parallel::detectCores(logical = TRUE) - 2L)
-    }
-    nw <- min(as.integer(nw), length(paths))
-    old <- future::plan(future::multisession, workers = nw)
-    on.exit(future::plan(old), add = TRUE)
-    future.apply::future_lapply(paths, load_one)
-  } else {
-    lapply(paths, load_one)
-  }
-  runs <- runs[!vapply(runs, is.null, logical(1))]
-  if (!length(runs)) {
+  runs <- data.frame(
+    id = basename(paths),
+    path = normalizePath(paths, winslash = "/", mustWork = FALSE),
+    stringsAsFactors = FALSE
+  )
+  out <- ssCurve(
+    runs,
+    col = "id",
+    for_plots = for_plots,
+    cache = TRUE,
+    parallel = parallel,
+    workers = workers
+  )
+  if (is.null(out)) {
     return(NULL)
   }
-  pe <- {
-    parts <- names(runs[[1]])
-    combined <- lapply(parts, function(part) {
-      do.call(rbind, lapply(runs, `[[`, part))
-    })
-    names(combined) <- parts
-    combined
-  }
-  if (isTRUE(for_plots) && curveSsNeedsEnrichment(pe)) {
-    if (!requireNamespace("FLRebuild", quietly = TRUE)) {
-      return(pe)
-    }
-    if (requireNamespace("magrittr", quietly = TRUE)) {
-      suppressPackageStartupMessages(library(magrittr, quietly = TRUE))
-    }
-    load_fb <- function(p) {
-      sid <- gsub("Scenario-", "Scenario ", basename(p))
-      out <- FLRebuild::curveSS(p)
-      lapply(out, function(df) {
-        if (is.data.frame(df)) {
-          cbind(id = sid, df, stringsAsFactors = FALSE)
-        } else {
-          df
-        }
-      })
-    }
-    runs <- if (isTRUE(parallel) && length(paths) > 1L &&
-        requireNamespace("future.apply", quietly = TRUE)) {
-      nw <- workers
-      if (is.null(nw)) {
-        nw <- max(1L, parallel::detectCores(logical = TRUE) - 2L)
+  if ("run" %in% names(out$tseries) && !"id" %in% names(out$tseries)) {
+    for (nm in names(out)) {
+      if (is.data.frame(out[[nm]]) && "run" %in% names(out[[nm]])) {
+        names(out[[nm]])[names(out[[nm]]) == "run"] <- "id"
       }
-      old <- future::plan(future::multisession, workers = min(nw, length(paths)))
-      on.exit(future::plan(old), add = TRUE)
-      future.apply::future_lapply(paths, load_fb)
-    } else {
-      lapply(paths, load_fb)
     }
-    parts <- names(runs[[1]])
-    combined <- lapply(parts, function(part) {
-      do.call(rbind, lapply(runs, `[[`, part))
-    })
-    names(combined) <- parts
-    return(combined)
   }
-  pe
+  out
 }

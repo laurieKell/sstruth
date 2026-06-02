@@ -6,19 +6,25 @@
 \usage{
 ssLoad(
   runs,
+  lazy = FALSE,
   cache = FALSE,
   covar = FALSE,
   forecast = FALSE,
   refresh = FALSE,
   parallel = TRUE,
-  workers = NULL
+  workers = NULL,
+  writeCache = TRUE
 )
 }
 \arguments{
 \item{runs}{\code{ssRuns()} table.}
 
+\item{lazy}{Return a lazy loader instead of loading all runs into memory.}
+
 \item{cache}{If \code{TRUE}, require cached output (use after \code{SS_outputs()}).}
 }
 \description{
-Load \code{SS_output} objects for many runs
+With \code{lazy = TRUE}, returns \code{\link{ssLazyLoad}} so each run is read
+from \code{ss_output.rds} only when accessed. With \code{lazy = FALSE}, loads
+all runs into a named list (can use substantial memory).
 }

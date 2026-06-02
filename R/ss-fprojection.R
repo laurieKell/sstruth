@@ -309,6 +309,8 @@ patchForecastForScenario <- function(fc, scenario, referenceDat, forecastYears) 
 #' @param referenceDataDir Directory with the **full** assessment data file (usually
 #'   \code{.../retrospectives/retro0}). Used only for \code{catchReported}. Default:
 #'   \code{file.path(dirname(baseDir), "retro0")}.
+#' @param forecastYears Optional integer vector of calendar forecast years. Overrides
+#'   \code{Nforecastyrs} from \code{forecast.ss} (length sets \code{Nforecastyrs}).
 #' @param runLogical If \code{FALSE}, only copy and patch files; do not call the executable.
 #' @param reuseProjectionWorkdir If \code{TRUE} (default), copy the peel into a single
 #'   working directory \code{file.path(outParent, ".ss3_projection_work")}, re-patch
@@ -334,6 +336,7 @@ runFlevelProjections <- function(
     ssVersion = "3.30",
     scenarios = c("catchReported", "fMeanFull", "fZero", "fMsy"),
     referenceDataDir = NULL,
+    forecastYears = NULL,
     runLogical = TRUE,
     reuseProjectionWorkdir = TRUE,
     removeProjectionWorkdir = TRUE,
@@ -364,16 +367,24 @@ runFlevelProjections <- function(
     readAll = TRUE,
     verbose = FALSE
   )
-  ny <- as.integer(unlist(fcTemplate["Nforecastyrs"])[1])
-  if (is.na(ny) || ny < 1L) {
-    stop("Invalid Nforecastyrs in ", fcPath)
-  }
   datPeel <- readSsDat(baseDir, version = ssVersion)
   peelEndyr <- as.integer(unlist(datPeel["endyr"])[1])
   if (is.na(peelEndyr)) {
     stop("Could not read endyr from peel data file in ", baseDir)
   }
-  forecastYears <- seq(peelEndyr + 1L, by = 1L, length.out = ny)
+  if (!is.null(forecastYears)) {
+    forecastYears <- as.integer(forecastYears)
+    if (!length(forecastYears)) {
+      stop("forecastYears must be a non-empty integer vector.", call. = FALSE)
+    }
+    ny <- length(forecastYears)
+  } else {
+    ny <- as.integer(unlist(fcTemplate["Nforecastyrs"])[1])
+    if (is.na(ny) || ny < 1L) {
+      stop("Invalid Nforecastyrs in ", fcPath)
+    }
+    forecastYears <- seq(peelEndyr + 1L, by = 1L, length.out = ny)
+  }
 
   datRef <- NULL
   if (any(scenarios == "catchReported")) {
@@ -409,6 +420,7 @@ runFlevelProjections <- function(
       verbose = FALSE
     )
     fc <- patchForecastForScenario(fc, sc, datRef, forecastYears)
+    fc$Nforecastyrs <- ny
     r4ss::SS_writeforecast(fc, dir = runDir, overwrite = TRUE, verbose = FALSE)
     patchStarterProjectionPass(file.path(runDir, "starter.ss"))
     if (!isTRUE(runLogical)) {

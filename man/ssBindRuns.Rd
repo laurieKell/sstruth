@@ -9,6 +9,7 @@ ssBindRuns(
   slot,
   col = "scenario",
   cache = TRUE,
+  lazy = NULL,
   covar = FALSE,
   forecast = FALSE,
   refresh = FALSE,
@@ -24,7 +25,11 @@ ssBindRuns(
 \item{col}{Scenario id column name.}
 
 \item{cache}{If \code{TRUE}, require cached output (use after \code{SS_outputs()}).}
+
+\item{lazy}{Stream runs one at a time when binding (default \code{NULL} = \code{cache}).}
 }
 \description{
-Load runs and bind one slot
+When \code{lazy = TRUE} (default if \code{cache = TRUE}), reads one cached run
+at a time and discards it after extracting \code{slot}, avoiding a large in-memory
+list of full \code{SS_output} objects.
 }

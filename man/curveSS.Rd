@@ -4,19 +4,21 @@
 \alias{curveSS}
 \title{Build SS3 time-series and equilibrium curve without FLR dependencies}
 \usage{
-curveSS(x, ...)
+curveSS(x, cache = TRUE, ...)
 }
 \arguments{
-\item{x}{SS3 directory path.}
+\item{x}{SS3 run directory or \code{SS_output} list.}
 
-\item{...}{Reserved for future options.}
+\item{cache}{Read or write \code{ss_output.rds} when \code{x} is a directory.}
+
+\item{...}{Passed to \code{ssRead()} when reading \code{Report.sso}.}
 }
 \value{
 List with elements \code{tseries}, \code{curve}, and \code{refpts}.
 }
 \description{
-Reads an SS3 run via \code{r4ss::SS_output()} and returns a list with
-\code{tseries} and \code{curve}, mirroring the pieces used by
+Reads an SS3 run (cached \code{ss_output.rds} or \code{Report.sso}) and returns
+a list with \code{tseries} and \code{curve}, mirroring the pieces used by
 \code{ssPe()} / \code{ssPeCompare()}.
 }
 \details{

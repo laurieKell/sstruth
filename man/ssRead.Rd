@@ -7,6 +7,7 @@
 ssRead(
   runDir,
   refresh = FALSE,
+  cacheOnly = FALSE,
   covar = FALSE,
   forecast = FALSE,
   writeCache = TRUE
@@ -17,11 +18,16 @@ ssRead(
 
 \item{refresh}{Ignore cache and re-read \code{Report.sso}.}
 
+\item{cacheOnly}{If \code{TRUE}, read only from \code{ss_output.rds} (no fallback).}
+
 \item{covar, forecast}{Passed to \code{r4ss::SS_output()}.}
 
 \item{writeCache}{Write \code{ss_output.rds} after a fresh read.}
 }
 \description{
-Uses \code{ss_output.rds}, then \code{ss.RData}, then \code{Report.sso}.
-Fresh reads are cached to \code{ss_output.rds} when \code{writeCache = TRUE}.
+Uses \code{ss_output.rds} in each run folder, then \code{ss.RData}, then
+\code{Report.sso}. Fresh reads are written to \code{ss_output.rds} when
+\code{writeCache = TRUE}. Run \code{SS_outputs()} once to populate caches,
+then use \code{ssLazyLoad()} or \code{getSS(..., cache = TRUE)} without
+re-parsing \code{Report.sso}.
 }

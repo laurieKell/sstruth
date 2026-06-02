@@ -1,7 +1,7 @@
 Package: sstruth
 Type: Package
 Title: sstruth
-Version: 0.0.0.9022
+Version: 0.0.0.9028
 Authors@R: 
     c(person(given = "Your",
              family = "Name",
@@ -16,6 +16,7 @@ Depends:
 Imports:
     diags,
     dplyr,
+    FLCore,
     future,
     future.apply,
     ggplot2,
