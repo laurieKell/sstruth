@@ -9,19 +9,26 @@
 ##' @export
 setGeneric('ssLen',     function(x,...) methods::standardGeneric('ssLen'))
 
-setMethod('ssLen',    signature(x='character'), function(x,...){
-  lns=r4ss::SS_output(x,forecast  =FALSE, 
-                  covar     =FALSE,
-                  verbose   =FALSE, 
-                  printstats=FALSE, 
-                  hidewarn  =TRUE, 
-                  NoCompOK  =TRUE)
-  
-   lns=lns[c("lendbase",
-             "len_comp_fit_table",
-             "Length_comp_error_controls",
-             "Length_Comp_Fit_Summary")]
-    names(lns)=c("db","fit","controls","summary")
-  
-    lns})
+setMethod('ssLen', signature(x = 'character'), function(x, ...) {
+  rep <- ssRead(x, writeCache = FALSE)
+  if (is.null(rep)) {
+    if (!requireNamespace("r4ss", quietly = TRUE)) {
+      stop("Package 'r4ss' is required.", call. = FALSE)
+    }
+    rep <- r4ss::SS_output(
+      x,
+      forecast = FALSE,
+      covar = FALSE,
+      verbose = FALSE,
+      printstats = FALSE,
+      hidewarn = TRUE,
+      NoCompOK = TRUE
+    )
+  }
+  ssLenFromRep(rep)
+})
+
+setMethod('ssLen', signature(x = 'list'), function(x, ...) {
+  ssLenFromRep(x)
+})
 

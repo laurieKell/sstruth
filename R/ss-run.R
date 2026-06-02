@@ -22,37 +22,34 @@ copySsInputs <- function(from_dir, to_dir) {
 
 #' Read an SS3 report object from cache or Report.sso
 #'
-#' Loads \code{ss.RData} when present; otherwise calls \code{r4ss::SS_output()}.
+#' Loads \code{ss_output.rds}, \code{ss.RData}, or calls \code{r4ss::SS_output()}.
 #'
 #' @param run_dir SS3 run directory.
-#' @param save_rds If \code{TRUE} and SS3 is run, save \code{ss.RData} after read.
+#' @param save_rds If \code{TRUE}, save \code{ss.RData} and \code{ss_output.rds}.
+#' @param refresh Re-read \code{Report.sso} ignoring cache.
+#' @param covar,forecast Passed to \code{r4ss::SS_output()}.
 #' @export
-readSs3Run <- function(run_dir, save_rds = FALSE) {
-  if (!requireNamespace("r4ss", quietly = TRUE)) {
-    stop("Package 'r4ss' is required.", call. = FALSE)
-  }
-  rdata <- file.path(run_dir, "ss.RData")
-  if (file.exists(rdata)) {
-    env <- new.env(parent = emptyenv())
-    load(rdata, envir = env)
-    if (exists("ss", envir = env, inherits = FALSE)) {
-      return(get("ss", envir = env))
-    }
-  }
-  if (!file.exists(file.path(run_dir, "Report.sso"))) {
+readSs3Run <- function(
+  run_dir,
+  save_rds = FALSE,
+  refresh = FALSE,
+  covar = FALSE,
+  forecast = FALSE
+) {
+  rep <- ssRead(
+    run_dir,
+    refresh = refresh,
+    covar = covar,
+    forecast = forecast,
+    writeCache = FALSE
+  )
+  if (is.null(rep)) {
     return(NULL)
   }
-  rep <- r4ss::SS_output(
-    run_dir,
-    verbose = FALSE,
-    printstats = FALSE,
-    covar = FALSE,
-    hidewarn = TRUE,
-    NoCompOK = TRUE
-  )
-  if (isTRUE(save_rds) && !is.null(rep)) {
+  if (isTRUE(save_rds)) {
     ss <- rep
-    save(ss, file = rdata)
+    save(ss, file = file.path(run_dir, "ss.RData"))
+    saveRDS(rep, ssCache(run_dir))
   }
   rep
 }

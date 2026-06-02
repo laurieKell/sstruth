@@ -22,7 +22,7 @@ compareAll(
 \item{proj_years}{Number of projection years.}
 
 \item{ssDir}{Optional SS3 directory passed to \code{\link[=compareProduction]{compareProduction()}} for the equilibrium
-curve via \code{\link[FLRebuild:curveSS]{FLRebuild::curveSS()}}.}
+curve via \code{\link[=curveSS]{curveSS()}}.}
 }
 \value{
 Named list with historical, current, production, and projections.

@@ -3,20 +3,18 @@
 \name{readTruth}
 \alias{readTruth}
 \alias{readTruth,character-method}
-\title{Read SS3 truth object via ss3om}
+\title{Read SS3 truth object as \code{FLStock}}
 \usage{
 readTruth(x, ...)
 
 \S4method{readTruth}{character}(x, ...)
 }
 \arguments{
-\item{x}{SS3 directory path.}
+\item{x}{SS3 directory path or object.}
 
-\item{...}{Additional arguments passed to \code{ss3om::readFLSss3()}.}
-}
-\value{
-FLR-compatible truth object.
+\item{...}{Passed to \code{readFLSss3()}.}
 }
 \description{
-Read SS3 truth object via ss3om
+Delegates to \code{readFLSss3()} for a single run directory.
+Use \code{readFLSss3(base)} to scan nested runs.
 }

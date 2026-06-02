@@ -1,18 +1,20 @@
 library(methods)
 utils::globalVariables(c("year", "value", "series", "metric", "stock", "B_Bmsy", "source", "scenario"))
 
-#' Read SS3 truth object via ss3om
+#' Read SS3 truth object as \code{FLStock}
 #'
-#' @param x SS3 directory path.
-#' @param ... Additional arguments passed to `ss3om::readFLSss3()`.
-#' @return FLR-compatible truth object.
+#' Delegates to \code{readFLSss3()} for a single run directory.
+#' Use \code{readFLSss3(base)} to scan nested runs.
+#'
+#' @param x SS3 directory path or object.
+#' @param ... Passed to \code{readFLSss3()}.
 #' @export
 setGeneric("readTruth", function(x, ...) standardGeneric("readTruth"))
 
 #' @rdname readTruth
 #' @export
 setMethod("readTruth", signature(x = "character"), function(x, ...) {
-  ss3om::readFLSss3(x, ...)
+  readFLSss3(x, writeCache = FALSE, ...)
 })
 
 #' Convert SS object to standardized truth table

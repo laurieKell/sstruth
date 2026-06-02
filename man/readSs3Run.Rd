@@ -4,13 +4,23 @@
 \alias{readSs3Run}
 \title{Read an SS3 report object from cache or Report.sso}
 \usage{
-readSs3Run(run_dir, save_rds = FALSE)
+readSs3Run(
+  run_dir,
+  save_rds = FALSE,
+  refresh = FALSE,
+  covar = FALSE,
+  forecast = FALSE
+)
 }
 \arguments{
 \item{run_dir}{SS3 run directory.}
 
-\item{save_rds}{If \code{TRUE} and SS3 is run, save \code{ss.RData} after read.}
+\item{save_rds}{If \code{TRUE}, save \code{ss.RData} and \code{ss_output.rds}.}
+
+\item{refresh}{Re-read \code{Report.sso} ignoring cache.}
+
+\item{covar, forecast}{Passed to \code{r4ss::SS_output()}.}
 }
 \description{
-Loads \code{ss.RData} when present; otherwise calls \code{r4ss::SS_output()}.
+Loads \code{ss_output.rds}, \code{ss.RData}, or calls \code{r4ss::SS_output()}.
 }

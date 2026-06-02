@@ -23,7 +23,7 @@ compareProduction(
 when \code{ssDir} is set).}
 
 \item{ssDir}{Optional SS3 run directory. If non-\code{NULL}, the SS3 curve is \strong{not} fitted:
-it is read from \code{\link[FLRebuild:curveSS]{FLRebuild::curveSS()}} as equilibrium \strong{yield} vs \strong{SSB} (columns
+it is read from \code{\link[=curveSS]{curveSS()}} as equilibrium \strong{yield} vs \strong{SSB} (columns
 \code{stock} = SSB, \code{production} = yield). If \code{NULL}, SS3 is approximated with a
 Schaefer fit to the truth time series (same as JABBA side).}
 }
