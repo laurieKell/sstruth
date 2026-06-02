@@ -18,8 +18,44 @@
 #'   \code{triangle} (an MSY reference polygon in \code{x}/\code{y} space).
 #' @export
 curveSS <- function(x, cache = TRUE, ...) {
-  rep <- ssReadOutput(x, cache = cache, ...)
+  rep <- .readSsOutput(x, cache = cache, ...)
   .curveSSFromRep(rep)
+}
+
+#' Read \code{SS_output} for curveSS (uses \code{ssReadOutput} when installed).
+#' @noRd
+.readSsOutput <- function(x, cache = TRUE, ...) {
+  fn <- get0("ssReadOutput", envir = asNamespace("sstruth"), inherits = FALSE)
+  if (is.function(fn)) {
+    return(fn(x, cache = cache, ...))
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    return(x)
+  }
+  if (!is.character(x) || length(x) != 1L || !nzchar(x)) {
+    stop(
+      "Provide an SS3 run directory, ss_output.rds path, or SS_output list.",
+      call. = FALSE
+    )
+  }
+  path <- normalizePath(x, winslash = "/", mustWork = FALSE)
+  if (grepl("\\.rds$", path, ignore.case = TRUE) && file.exists(path)) {
+    return(readRDS(path))
+  }
+  if (!dir.exists(path)) {
+    stop("SS3 run directory not found: ", path, call. = FALSE)
+  }
+  out <- NULL
+  if (isTRUE(cache) && file.exists(ssCache(path))) {
+    out <- readRDS(ssCache(path))
+  }
+  if (is.null(out)) {
+    out <- ssRead(path, writeCache = isTRUE(cache), ...)
+  }
+  if (is.null(out)) {
+    stop("Could not read SS_output from ", path, call. = FALSE)
+  }
+  out
 }
 
 #' Validate process-error display mode

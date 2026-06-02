@@ -1,7 +1,7 @@
 Package: sstruth
 Type: Package
 Title: sstruth
-Version: 0.0.0.9028
+Version: 0.0.0.9029
 Authors@R: 
     c(person(given = "Your",
              family = "Name",
@@ -34,8 +34,11 @@ Suggests:
     FLRebuild,
     FLasher,
     JABBA,
+    kobe,
     knitr,
-    rmarkdown
+    patchwork,
+    rmarkdown,
+    viridis
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

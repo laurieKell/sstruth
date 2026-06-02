@@ -92,6 +92,67 @@ ssCache <- function(runDir) {
   file.path(runDir, .ssCacheName())
 }
 
+.isSsOutputFile <- function(path) {
+  is.character(path) &&
+    length(path) == 1L &&
+    nzchar(path) &&
+    file.exists(path) &&
+    grepl("\\.rds$", path, ignore.case = TRUE)
+}
+
+.ssOutputId <- function(path) {
+  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  if (.isSsOutputFile(path)) {
+    stem <- tools::file_path_sans_ext(basename(path))
+    if (identical(tolower(stem), "ss_output")) {
+      return(basename(dirname(path)))
+    }
+    return(stem)
+  }
+  basename(path)
+}
+
+#' Read \code{SS_output} from a run directory or \code{.rds} file
+#'
+#' Accepts an SS3 run folder (uses \code{ss_output.rds} / \code{Report.sso} via
+#' \code{\link{ssRead}}), a path to a saved \code{ss_output.rds}, or any other
+#' \code{.rds} file containing an \code{SS_output} list. Also accepts an
+#' in-memory \code{SS_output} list unchanged.
+#'
+#' @param x SS3 run directory, \code{ss_output.rds} path, or \code{SS_output} list.
+#' @param cache Read or write \code{ss_output.rds} when \code{x} is a directory.
+#' @param ... Passed to \code{ssRead()} when reading \code{Report.sso}.
+#' @export
+ssReadOutput <- function(x, cache = TRUE, ...) {
+  if (is.list(x) && !is.data.frame(x)) {
+    return(x)
+  }
+  if (!is.character(x) || length(x) != 1L || !nzchar(x)) {
+    stop(
+      "Provide an SS3 run directory, ss_output.rds path, or SS_output list.",
+      call. = FALSE
+    )
+  }
+  path <- normalizePath(x, winslash = "/", mustWork = FALSE)
+  if (.isSsOutputFile(path)) {
+    return(readRDS(path))
+  }
+  if (!dir.exists(path)) {
+    stop("SS3 run directory or SS_output .rds not found: ", path, call. = FALSE)
+  }
+  out <- NULL
+  if (isTRUE(cache) && file.exists(ssCache(path))) {
+    out <- readRDS(ssCache(path))
+  }
+  if (is.null(out)) {
+    out <- ssRead(path, writeCache = isTRUE(cache), ...)
+  }
+  if (is.null(out)) {
+    stop("Could not read SS_output from ", path, call. = FALSE)
+  }
+  out
+}
+
 #' Read \code{SS_output} for one run
 #'
 #' Uses \code{ss_output.rds} in each run folder, then \code{ss.RData}, then

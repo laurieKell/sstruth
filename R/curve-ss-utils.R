@@ -193,7 +193,7 @@ ssCurve <- function(
       path <- runs$path[[i]]
       out <- tryCatch(
         if (.isSsOutputFile(path)) {
-          curveSS(ssReadOutput(path))
+          curveSS(.readSsOutput(path, cache = FALSE))
         } else {
           FLRebuild::curveSS(path, ...)
         },
