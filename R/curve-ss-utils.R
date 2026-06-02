@@ -123,6 +123,49 @@ curveSsTerminalRows <- function(ts) {
   combined
 }
 
+#' Ensure \code{refpts$msy} / \code{refpts$bmsy} per run after \code{\link{ssCurve}} combine
+#' @noRd
+.ssCurveEnsureRefpts <- function(pe, col = "run") {
+  if (is.null(pe) || is.null(pe$curve) || !NROW(pe$curve)) {
+    return(pe)
+  }
+  run_col <- col
+  if (!run_col %in% names(pe$curve)) {
+    run_col <- intersect(c("run", "id"), names(pe$curve))[1L]
+  }
+  if (is.na(run_col) || !all(c("ssb", "yield") %in% names(pe$curve))) {
+    return(pe)
+  }
+
+  runs <- unique(as.character(pe$curve[[run_col]]))
+  rf_old <- pe$refpts
+  pieces <- lapply(runs, function(rid) {
+    x <- pe$curve[as.character(pe$curve[[run_col]]) == rid, , drop = FALSE]
+    crv <- x[, c("ssb", "yield"), drop = FALSE]
+    if ("F" %in% names(x)) {
+      crv$F <- x$F
+    }
+    rf <- .curveSSRefpts(crv, derived_quants = NULL)
+    rf[[run_col]] <- rid
+    if (is.data.frame(rf_old) && NROW(rf_old) && run_col %in% names(rf_old)) {
+      i <- match(rid, as.character(rf_old[[run_col]]))
+      if (!is.na(i)) {
+        for (fld in c("msy", "bmsy", "fmsy")) {
+          if (fld %in% names(rf_old) && is.finite(rf_old[[fld]][i]) && rf_old[[fld]][i] > 0) {
+            rf[[fld]] <- as.numeric(rf_old[[fld]][i])
+          }
+        }
+      }
+    }
+    rf
+  })
+  rf_new <- do.call(rbind, pieces)
+  rownames(rf_new) <- NULL
+  col_order <- c(run_col, setdiff(names(rf_new), run_col))
+  pe$refpts <- rf_new[, col_order, drop = FALSE]
+  pe
+}
+
 #' Process-error curves across SS3 runs
 #'
 #' Runs \code{curveSS()} on every nested scenario under an assessment base and
@@ -140,6 +183,8 @@ curveSsTerminalRows <- function(ts) {
 #' @param ... Passed to \code{curveSS()} / \code{ssRead()}.
 #' @return Named list with combined \code{tseries}, \code{curve}, \code{refpts},
 #'   and optional \code{triangle} data frames, or \code{NULL} if no runs succeed.
+#'   \code{refpts} includes \code{msy} (from \code{Dead_Catch_MSY} when available,
+#'   otherwise the equilibrium-curve peak) and \code{bmsy} per run.
 #' @export
 ssCurve <- function(
   x,
@@ -214,6 +259,9 @@ ssCurve <- function(
       workers = workers
     )
     combined <- .curveSsCombinePieces(pieces)
+  }
+  if (!is.null(combined)) {
+    combined <- .ssCurveEnsureRefpts(combined, col = col)
   }
   combined
 }

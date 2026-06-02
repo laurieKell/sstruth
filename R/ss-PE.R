@@ -328,24 +328,54 @@ pePlotLimits <- function(x, ylim = NULL, prob = 0.02) {
   curve <- curve[keep, , drop = FALSE]
   if (!nrow(curve)) stop("No finite rows in equilibrium curve.", call. = FALSE)
 
-  rp <- rep$derived_quants
-  get_dq <- function(keys) {
-    if (!is.data.frame(rp) || !all(c("Label", "Value") %in% names(rp))) return(NA_real_)
-    idx <- match(tolower(keys), tolower(as.character(rp$Label)))
-    idx <- idx[!is.na(idx)]
-    if (!length(idx)) return(NA_real_)
-    as.numeric(rp$Value[idx[1]])
-  }
-  refpts <- data.frame(
-    bmsy = get_dq(c("SSB_MSY", "Btgt_MSY")),
-    msy = get_dq(c("MSY")),
-    fmsy = get_dq(c("annF_MSY", "F_MSY", "F_at_MSY")),
-    stringsAsFactors = FALSE
-  )
+  refpts <- .curveSSRefpts(curve, rep$derived_quants)
 
   triangle <- .curveSSTriangle(curve, refpts)
 
   list(tseries = tseries, curve = curve, refpts = refpts, triangle = triangle)
+}
+
+#' Reference points for curveSS (aligned with FLRebuild::curveSS).
+#' MSY from \code{Dead_Catch_MSY} / equilibrium-curve peak; SSB from \code{SSB_MSY}.
+#' @noRd
+.curveSSRefpts <- function(curve, derived_quants = NULL) {
+  get_dq <- function(keys) {
+    if (!is.data.frame(derived_quants) ||
+        !all(c("Label", "Value") %in% names(derived_quants))) {
+      return(NA_real_)
+    }
+    labels <- tolower(as.character(derived_quants$Label))
+    keys <- tolower(keys)
+    idx <- match(keys, labels)
+    idx <- idx[!is.na(idx)]
+    if (!length(idx)) {
+      return(NA_real_)
+    }
+    as.numeric(derived_quants$Value[idx[1]])
+  }
+
+  bmsy <- get_dq(c("SSB_MSY", "SSB_Btgt", "Btgt_MSY"))
+  msy <- get_dq(c("Dead_Catch_MSY", "Ret_Catch_MSY", "MSY"))
+  fmsy <- get_dq(c("annF_MSY", "F_MSY", "F_at_MSY"))
+
+  ok <- is.finite(curve$yield) & curve$yield > 0 & is.finite(curve$ssb)
+  if (any(ok)) {
+    ix <- which.max(curve$yield[ok])
+    idx <- which(ok)[ix]
+    if (!is.finite(msy) || msy <= 0) {
+      msy <- as.numeric(curve$yield[idx])
+    }
+    if (!is.finite(bmsy) || bmsy <= 0) {
+      bmsy <- as.numeric(curve$ssb[idx])
+    }
+  }
+
+  data.frame(
+    bmsy = bmsy,
+    msy = msy,
+    fmsy = fmsy,
+    stringsAsFactors = FALSE
+  )
 }
 
 #' @noRd
